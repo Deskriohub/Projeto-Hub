@@ -42,10 +42,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearAuthError = () => setAuthError(null);
 
-  const signInWithEmail = async (email: string, password: string, _rememberMe: boolean) => {
+  const signInWithEmail = async (email: string, password: string, rememberMe: boolean) => {
     clearAuthError();
+    localStorage.setItem("deskrio_remember_me", String(rememberMe));
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
+      localStorage.removeItem("deskrio_remember_me");
       const message = error.message === "Invalid login credentials"
         ? "E-mail ou senha incorretos" : error.message;
       setAuthError(message);
@@ -66,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    localStorage.removeItem("deskrio_remember_me");
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
