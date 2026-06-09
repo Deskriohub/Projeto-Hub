@@ -29,7 +29,9 @@ const Index = () => {
       <ElogiosRecebidos />
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 items-start">
         <DestaquesPodium />
-        <EventCalendar />
+        <div className="min-w-0 overflow-hidden">
+          <EventCalendar />
+        </div>
       </div>
     </div>
   );

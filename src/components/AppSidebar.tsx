@@ -1,6 +1,6 @@
 import {
   Home, BarChart3, Bot, Users, Smile,
-  CalendarRange, Lightbulb, Settings, ChevronDown, LockKeyhole, type LucideIcon
+  CalendarRange, Lightbulb, Settings, ChevronDown, type LucideIcon
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import deskrioLogo from "@/assets/deskrio-logo.png";
@@ -14,24 +14,7 @@ import {
   SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-const ROLE_LABELS: Record<AppRole, string> = { admin: "Admin", gestor: "Gestor", geral: "Geral" };
-const ALL_ROLES: AppRole[] = ["admin", "gestor", "geral"];
-const rolesWithAccess = (m: AppRole) => ALL_ROLES.filter((r) => hasMinRole(r, m));
-
-function RoleLockIcon({ minRole }: { minRole: AppRole }) {
-  if (minRole === "geral") return null;
-  const roles = rolesWithAccess(minRole).map((r) => ROLE_LABELS[r]);
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <LockKeyhole className="h-3.5 w-3.5 opacity-40 shrink-0 ml-1.5" />
-      </TooltipTrigger>
-      <TooltipContent side="right" className="text-xs whitespace-nowrap">Restrito: {roles.join(", ")}</TooltipContent>
-    </Tooltip>
-  );
-}
 
 interface SidebarReport { name: string; url?: string; reportId?: string; workspaceId?: string; isPaginated?: boolean; }
 
@@ -64,7 +47,6 @@ export function AppSidebar() {
   const canSee = (url: string) => { const r = NAV_PERMISSIONS[url]; return !r || hasMinRole(role, r); };
 
   const renderSimpleItem = (item: SimpleNavItem) => {
-    const minRole = item.minRole ?? (NAV_PERMISSIONS[item.url] || "geral" as AppRole);
     return (
       <SidebarMenuItem key={item.title}>
         <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
@@ -72,7 +54,7 @@ export function AppSidebar() {
             className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold">
             <item.icon className="h-5 w-5" />
-            {!collapsed && (<><span>{item.title}</span><RoleLockIcon minRole={minRole} /></>)}
+            {!collapsed && <span>{item.title}</span>}
           </NavLink>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -131,7 +113,6 @@ export function AppSidebar() {
                         className="text-sidebar-foreground/60 hover:text-sidebar-foreground"
                         activeClassName="text-sidebar-primary font-semibold">
                         <span>{sub.title}</span>
-                        <RoleLockIcon minRole={sub.minRole ?? "geral" as AppRole} />
                       </NavLink>
                     </SidebarMenuSubButton>
                   </SidebarMenuSubItem>
