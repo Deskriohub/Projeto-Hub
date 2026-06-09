@@ -2,43 +2,12 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ExternalLink, Megaphone } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Notice {
-  title: string;
-  link: string;
-}
-
-const NOTICES_URL =
-  "https://example.invalid/REPLACE_ME";
-
-function parseCSV(csv: string): string[][] {
-  const rows: string[][] = [];
-  const lines = csv.split("\n");
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    const cols: string[] = [];
-    let current = "";
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQuotes && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = !inQuotes;
-        }
-      } else if (ch === "," && !inQuotes) {
-        cols.push(current);
-        current = "";
-      } else {
-        current += ch;
-      }
-    }
-    cols.push(current);
-    rows.push(cols);
-  }
-  return rows;
+  id: string;
+  titulo: string;
+  link: string | null;
 }
 
 export function NoticeBoard() {
@@ -46,19 +15,15 @@ export function NoticeBoard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(NOTICES_URL)
-      .then((r) => r.text())
-      .then((csv) => {
-        const rows = parseCSV(csv);
-        const headers = rows[0]?.map((h) => h.trim().toLowerCase()) || [];
-        const data = rows.slice(1).map((r) => ({
-          title: r[0]?.trim() || "",
-          link: r[1]?.trim() || "",
-        })).filter((n) => n.title);
-        setNotices(data);
+    supabase
+      .from("avisos")
+      .select("id, titulo, link")
+      .eq("ativo", true)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        setNotices((data as Notice[]) ?? []);
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      });
   }, []);
 
   if (loading) return <Card className="animate-pulse h-48" />;
@@ -77,12 +42,12 @@ export function NoticeBoard() {
             </p>
           ) : (
             <div className="space-y-3">
-              {notices.map((notice, i) => (
+              {notices.map((notice) => (
                 <div
-                  key={i}
+                  key={notice.id}
                   className="p-3 rounded-md bg-muted/50 border border-border/50 flex items-center justify-between gap-2"
                 >
-                  <p className="text-sm font-semibold text-foreground">{notice.title}</p>
+                  <p className="text-sm font-semibold text-foreground">{notice.titulo}</p>
                   {notice.link && (
                     <a
                       href={notice.link}

@@ -1,6 +1,6 @@
 import {
   Home, BarChart3, Bot, Users, Smile,
-  CalendarRange, Lightbulb, Settings, ChevronDown, type LucideIcon
+  CalendarRange, Lightbulb, Settings, ChevronDown, Megaphone, type LucideIcon
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import deskrioLogo from "@/assets/deskrio-logo.png";
@@ -67,7 +67,7 @@ export function AppSidebar() {
 
   const oneOnOneSubItems: { title: string; url: string; minRole: AppRole }[] = [
     { title: "Minhas reuniões", url: "/meus-one-on-one", minRole: "geral" },
-    { title: "Todas as reuniões", url: "/one-on-one", minRole: "gestor" },
+    { title: "Todas as reuniões", url: "/one-on-one", minRole: "admin" },
   ];
 
   const recursosTail: SimpleNavItem[] = [
@@ -76,6 +76,7 @@ export function AppSidebar() {
 
   const adminItems: SimpleNavItem[] = [
     { title: "Usuários", url: "/usuarios", icon: Users },
+    { title: "Avisos", url: "/avisos", icon: Megaphone },
     { title: "Sugestões", url: "/sugestoes", icon: Lightbulb },
     { title: "Configurações", url: "/configuracoes", icon: Settings },
   ];

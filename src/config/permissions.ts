@@ -6,17 +6,24 @@ export function hasMinRole(userRole: AppRole, requiredRole: AppRole): boolean {
   return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
 }
 
+export const ROLE_LABELS: Record<string, string> = {
+  admin: "Admin",
+  gestor: "Admin",
+  geral: "Usuário",
+};
+
 export const ROUTE_PERMISSIONS: Record<string, AppRole> = {
   "/": "geral",
   "/relatorios": "geral",
   "/assistente": "geral",
   "/usuarios": "admin",
-  "/one-on-one": "gestor",
-  "/one-on-one/novo": "gestor",
+  "/one-on-one": "admin",
+  "/one-on-one/novo": "admin",
   "/meus-one-on-one": "geral",
   "/elogios": "geral",
   "/mural-elogios": "geral",
   "/sugestoes": "admin",
+  "/avisos": "admin",
   "/configuracoes": "admin",
 };
 
@@ -25,11 +32,12 @@ export const NAV_PERMISSIONS: Record<string, AppRole> = {
   "/relatorios": "geral",
   "/assistente": "geral",
   "/usuarios": "admin",
-  "/one-on-one": "gestor",
+  "/one-on-one": "admin",
   "/meus-one-on-one": "geral",
   "/elogios": "geral",
   "/mural-elogios": "geral",
   "/sugestoes": "admin",
+  "/avisos": "admin",
   "/configuracoes": "admin",
 };
 

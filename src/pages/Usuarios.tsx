@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { Search, Users } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { AppRole } from "@/config/permissions";
+import { ROLE_LABELS } from "@/config/permissions";
 
 interface UserProfile {
   id: string;
@@ -102,8 +103,7 @@ const Usuarios = () => {
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="gestor">Gestor</SelectItem>
-            <SelectItem value="geral">Geral</SelectItem>
+            <SelectItem value="geral">Usuário</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -163,12 +163,11 @@ const Usuarios = () => {
                           onValueChange={(val) => updateRole(u.id, val as AppRole)}
                         >
                           <SelectTrigger className="w-32">
-                            <SelectValue />
+                            <SelectValue>{ROLE_LABELS[u.role] ?? u.role}</SelectValue>
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="gestor">Gestor</SelectItem>
-                            <SelectItem value="geral">Geral</SelectItem>
+                            <SelectItem value="geral">Usuário</SelectItem>
                           </SelectContent>
                         </Select>
                       )}

@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      avisos: {
+        Row: {
+          id: string
+          titulo: string
+          link: string | null
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          titulo: string
+          link?: string | null
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          titulo?: string
+          link?: string | null
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: []
+      }
       configuracoes: {
         Row: {
           id: string
