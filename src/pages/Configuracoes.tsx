@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Settings, Eye, EyeOff, KeyRound } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Settings, Eye, EyeOff, KeyRound, Bot } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/contexts/AuthContext";
@@ -21,6 +22,27 @@ export default function Configuracoes() {
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const [iaContexto, setIaContexto] = useState("");
+  const [savingIA, setSavingIA] = useState(false);
+
+  useEffect(() => {
+    if (role !== "admin") return;
+    supabase.from("configuracoes").select("valor").eq("id", "ia_contexto").maybeSingle()
+      .then(({ data }) => setIaContexto(data?.valor ?? ""));
+  }, [role]);
+
+  const handleSaveIA = async () => {
+    setSavingIA(true);
+    const { error } = await supabase.from("configuracoes")
+      .upsert({ id: "ia_contexto", valor: iaContexto, updated_at: new Date().toISOString() });
+    setSavingIA(false);
+    if (error) {
+      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Contexto da IA salvo" });
+    }
+  };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +119,31 @@ export default function Configuracoes() {
           </form>
         </CardContent>
       </Card>
+
+      {role === "admin" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Bot className="h-4 w-4 text-primary" /> Contexto da IA
+            </CardTitle>
+            <CardDescription>
+              Informações extras que a IA deve conhecer — processos internos, políticas, FAQ. O site da DeskRio já é consultado automaticamente.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <Textarea
+              placeholder="Ex: Nossa política de férias é... O processo de onboarding funciona assim..."
+              value={iaContexto}
+              onChange={(e) => setIaContexto(e.target.value)}
+              rows={6}
+              className="resize-none"
+            />
+            <Button onClick={handleSaveIA} disabled={savingIA} className="self-start">
+              {savingIA ? "Salvando..." : "Salvar contexto"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

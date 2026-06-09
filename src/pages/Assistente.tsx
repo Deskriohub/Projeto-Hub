@@ -1,42 +1,165 @@
-import { Bot, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useRef, useEffect } from "react";
+import { Bot, Send, Loader2, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/useProfile";
 
-// URL da IA do DeskRio (Prompt Studio) — defina VITE_DESKRIO_IA_URL no .env
-const IA_URL = import.meta.env.VITE_DESKRIO_IA_URL ?? "";
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
+
+const INITIAL: Message[] = [
+  { role: "assistant", content: "Olá! Sou a IA da DeskRio. Como posso ajudar?" },
+];
 
 const Assistente = () => {
+  const { initials } = useProfile();
+  const [messages, setMessages] = useState<Message[]>(INITIAL);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = async () => {
+    if (!input.trim() || loading) return;
+
+    const userMessage = input.trim();
+    setInput("");
+
+    const history = messages.filter((m) => m.content);
+    const newMessages: Message[] = [...history, { role: "user", content: userMessage }];
+    setMessages([...newMessages, { role: "assistant", content: "" }]);
+    setLoading(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deskrio-ia`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token}`,
+            "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+          body: JSON.stringify({
+            message: userMessage,
+            history: history.slice(-10).map(({ role, content }) => ({ role, content })),
+          }),
+        },
+      );
+
+      if (!res.ok || !res.body) throw new Error("Erro na requisição");
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let text = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        for (const line of decoder.decode(value).split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+          const raw = line.slice(6).trim();
+          if (raw === "[DONE]") continue;
+          try {
+            const token = JSON.parse(raw).choices?.[0]?.delta?.content ?? "";
+            text += token;
+            setMessages((prev) => {
+              const updated = [...prev];
+              updated[updated.length - 1] = { role: "assistant", content: text };
+              return updated;
+            });
+          } catch {
+            // chunk inválido
+          }
+        }
+      }
+    } catch {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content: "Desculpe, ocorreu um erro. Tente novamente.",
+        };
+        return updated;
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)]">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-foreground">Assistente IA</h1>
-        <p className="text-muted-foreground mt-1">Converse com a IA do DeskRio.</p>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Assistente IA</h1>
+          <p className="text-muted-foreground mt-1">Converse com a IA da DeskRio.</p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => setMessages(INITIAL)} disabled={loading}>
+          <Trash2 className="h-4 w-4 mr-1" /> Limpar
+        </Button>
       </div>
 
-      {IA_URL ? (
-        <Card className="flex-1 overflow-hidden">
-          <iframe src={IA_URL} title="Assistente IA DeskRio" className="w-full h-full border-0" />
-        </Card>
-      ) : (
-        <Card className="flex-1 flex flex-col items-center justify-center gap-4 text-center p-8">
-          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-            <Bot className="h-7 w-7 text-primary" />
+      <Card className="flex-1 flex flex-col overflow-hidden">
+        <ScrollArea className="flex-1 p-4">
+          <div className="space-y-4">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+                <Avatar className="h-8 w-8 shrink-0 mt-0.5">
+                  {msg.role === "assistant" ? (
+                    <AvatarFallback className="bg-primary/10">
+                      <Bot className="h-4 w-4 text-primary" />
+                    </AvatarFallback>
+                  ) : (
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                      {initials}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div
+                  className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                    msg.role === "user"
+                      ? "bg-primary text-primary-foreground rounded-tr-sm"
+                      : "bg-muted text-foreground rounded-tl-sm"
+                  }`}
+                >
+                  {msg.content || (loading && i === messages.length - 1
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : null)}
+                </div>
+              </div>
+            ))}
+            <div ref={bottomRef} />
           </div>
-          <div>
-            <p className="font-medium text-foreground">IA ainda não configurada</p>
-            <p className="text-sm text-muted-foreground max-w-sm mt-1">
-              Defina <code className="text-xs bg-muted px-1 py-0.5 rounded">VITE_DESKRIO_IA_URL</code> no
-              arquivo <code className="text-xs bg-muted px-1 py-0.5 rounded">.env</code> com a URL da IA do Prompt Studio.
-            </p>
-          </div>
-          <Button asChild variant="outline">
-            <a href="https://deskrio.com.br" target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4 mr-2" />Abrir DeskRio
-            </a>
+        </ScrollArea>
+
+        <div className="border-t p-4 flex gap-2">
+          <Input
+            placeholder="Pergunte algo sobre a DeskRio..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+            disabled={loading}
+            className="flex-1"
+          />
+          <Button onClick={sendMessage} disabled={!input.trim() || loading} size="icon">
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
-        </Card>
-      )}
+        </div>
+      </Card>
     </div>
   );
 };
+
 export default Assistente;
