@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN drive_folder_url text;

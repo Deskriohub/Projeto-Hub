@@ -1,0 +1,1 @@
+ALTER TABLE public.one_on_one_todos ADD COLUMN IF NOT EXISTS responsavel TEXT;
