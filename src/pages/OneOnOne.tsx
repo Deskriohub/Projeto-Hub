@@ -23,10 +23,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { OneOnOneTodoRow } from "@/components/OneOnOneTodoCheck";
 import { BulkOneOnOneDialog } from "@/components/BulkOneOnOneDialog";
 import { toast } from "@/hooks/use-toast";
-import { CalendarPlus } from "lucide-react";
+import { CalendarPlus, User } from "lucide-react";
 
 interface TodoItem {
   id: string;
@@ -265,17 +268,22 @@ const OneOnOne = () => {
           </h1>
           <p className="text-muted-foreground mt-1">Acompanhe os 1:1 dos liderados e os próximos passos de cada um.</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" onClick={() => setBulkOpen(true)}>
-            <CalendarPlus className="h-4 w-4 mr-2" /> Agendar para o time
-          </Button>
-          <Button
-            onClick={() => navigate("/one-on-one/novo")}
-            className="bg-purple-600 hover:bg-purple-700 text-white"
-          >
-            <Plus className="h-4 w-4 mr-2" /> Novo One-on-One
-          </Button>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+              <Plus className="h-4 w-4 mr-2" /> Novo One-on-One
+              <ChevronDown className="h-4 w-4 ml-1" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem onClick={() => navigate("/one-on-one/novo")} className="cursor-pointer">
+              <User className="h-4 w-4 mr-2" /> Reunião individual
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setBulkOpen(true)} className="cursor-pointer">
+              <CalendarPlus className="h-4 w-4 mr-2" /> Agendar para o time
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <BulkOneOnOneDialog open={bulkOpen} onClose={() => setBulkOpen(false)} onCreated={reload} />
