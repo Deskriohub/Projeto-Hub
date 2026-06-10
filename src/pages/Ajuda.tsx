@@ -1,4 +1,4 @@
-import { HelpCircle, Home, Smile, MessageCircle, CalendarRange, Lightbulb, Bot, Megaphone, BarChart3, Users, Settings, ChevronDown } from "lucide-react";
+import { HelpCircle, Home, Smile, MessageCircle, CalendarRange, Lightbulb, Bot, Megaphone, BarChart3, Users, Settings, Bell, CalendarPlus, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
@@ -22,41 +22,48 @@ const SECTIONS: Section[] = [
       {
         subtitle: "O que você vê na Home",
         steps: [
-          "Ao entrar na plataforma, você é levado direto para a Home.",
-          "No topo aparece uma saudação com o seu nome.",
-          "Abaixo há o calendário do mês mostrando tudo que tem data: eventos, avisos e reuniões One-on-One.",
-          "Também aparecem os avisos mais recentes da empresa.",
+          "Ao entrar, você cai direto na Home, com uma saudação pelo seu nome.",
+          "Missão, Visão e Valores da empresa no topo.",
+          "Mural de Avisos: os comunicados da empresa direcionados a você.",
+          "Mural de Elogios: reconhecimentos recentes.",
+          "Calendário do mês com tudo que tem data: eventos, avisos e reuniões 1:1.",
         ],
       },
       {
-        subtitle: "O que aparece no Calendário",
+        subtitle: "O Calendário",
         steps: [
-          "📅 Eventos criados manualmente — aparecem em cores variadas.",
-          "📢 Avisos com data — aparecem em amarelo (amber).",
-          "👥 Reuniões One-on-One — aparecem em azul (índigo).",
-          "Clique nas setas ← → para mudar de mês.",
-          "Clique em um dia para ver todos os compromissos daquele dia no painel abaixo.",
+          "📅 Eventos — em cores variadas.",
+          "📢 Avisos com data — em amarelo.",
+          "👥 Reuniões 1:1 — em azul, com a hora.",
+          "Use as setas ← → para mudar de mês.",
+          "Clique em um dia para ver os compromissos daquele dia no painel abaixo.",
+          "Clique em um evento para abrir e ver/editar todas as informações.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "notificacoes",
+    icon: Bell,
+    title: "Notificações (o sino) 🔔",
+    content: [
+      {
+        subtitle: "Como funciona",
+        steps: [
+          "No topo da tela, ao lado da sua foto, há um sino.",
+          "Um número vermelho indica quantas notificações você ainda não leu.",
+          "Clique no sino para ver a lista. Clique numa notificação para ir direto ao item.",
+          "Use 'Marcar todas' para limpar as não lidas.",
+          "Abaixo das notificações, aparecem seus próximos compromissos (7 dias).",
         ],
       },
       {
-        subtitle: "Criando um evento ou lembrete",
+        subtitle: "Quando você recebe uma notificação",
         steps: [
-          "1. No calendário, passe o mouse sobre um dia e clique no botão + (ou clique no dia e em 'Novo evento').",
-          "2. Preencha o título, data e, se quiser, hora e descrição.",
-          "3. Em 'Visibilidade', escolha: '📅 Mostrar no calendário' (todos veem) ou '🔒 Só para mim' (lembrete pessoal).",
-          "4. Use 'Só para mim' para criar lembretes pessoais das suas atividades — só você verá.",
-          "5. Clique em 'Criar evento'.",
-          "Qualquer pessoa (admin ou usuário) pode criar eventos e lembretes pessoais.",
-        ],
-      },
-      {
-        subtitle: "Notificações na tela 🔔",
-        steps: [
-          "No topo da tela, ao lado da sua foto, há um sino de notificações.",
-          "Ele mostra os próximos compromissos dos próximos 7 dias: eventos, avisos e reuniões.",
-          "Quando há compromissos para hoje, aparece um número vermelho no sino.",
-          "Ao entrar na plataforma, um aviso aparece na tela lembrando os compromissos do dia.",
-          "Clique em um item do sino para ir direto até ele.",
+          "Quando alguém responde sua sugestão.",
+          "Quando você recebe um feedback.",
+          "Quando um aviso é direcionado a você.",
+          "Quando te marcam num evento ou agendam/remarcam um 1:1 com você.",
         ],
       },
     ],
@@ -67,30 +74,19 @@ const SECTIONS: Section[] = [
     title: "Mural de Elogios",
     content: [
       {
-        subtitle: "O que é o Mural de Elogios",
+        subtitle: "Dar um elogio",
         steps: [
-          "O Mural de Elogios é um espaço para reconhecer publicamente um colega de trabalho.",
-          "Todos os funcionários podem dar e visualizar elogios.",
-          "Os elogios ficam visíveis para toda a equipe no mural.",
+          "1. Acesse 'Mural de Elogios' e clique em 'Novo Elogio'.",
+          "2. Escolha um emoji, selecione o colega e escreva a mensagem.",
+          "3. Marque 'Público' para todos verem, ou deixe privado.",
+          "4. Envie. Você pode reagir aos elogios de outros com emojis.",
         ],
       },
       {
-        subtitle: "Como dar um elogio",
+        subtitle: "Fotos no mural",
         steps: [
-          "1. Clique no botão 'Dar Elogio' no canto superior direito.",
-          "2. Escolha um emoji que represente o reconhecimento (ex: 🌟, 🚀, 💪).",
-          "3. No campo 'Para quem?', selecione o colega que você quer elogiar.",
-          "4. Escreva sua mensagem no campo de texto.",
-          "5. Marque 'Público' se quiser que todos vejam, ou deixe privado.",
-          "6. Clique em 'Enviar Elogio'.",
-        ],
-      },
-      {
-        subtitle: "Como reagir a um elogio",
-        steps: [
-          "No mural, cada elogio tem botões de reação com emojis.",
-          "Clique em um emoji para reagir ao elogio.",
-          "Você pode remover sua reação clicando no mesmo emoji novamente.",
+          "Cada elogio mostra a foto de quem enviou e de quem recebeu.",
+          "Clique no card para abrir com as fotos maiores e a mensagem completa.",
         ],
       },
     ],
@@ -101,42 +97,61 @@ const SECTIONS: Section[] = [
     title: "Feedbacks",
     content: [
       {
-        subtitle: "O que são os Feedbacks",
+        subtitle: "O que são",
         steps: [
-          "Feedbacks são mensagens privadas entre você e um colega.",
-          "Diferente dos elogios (públicos), os feedbacks são visíveis apenas para quem enviou e quem recebeu.",
-          "Existem três tipos: Positivo (verde), Construtivo (laranja) e Negativo (vermelho).",
-          "Use feedbacks para comunicar reconhecimentos, sugestões de melhoria ou situações que precisam de atenção.",
+          "Mensagens privadas entre colegas (só quem envia e quem recebe veem).",
+          "Três tipos: Positivo (verde), Construtivo (laranja), Negativo (vermelho).",
         ],
       },
       {
-        subtitle: "Como dar um feedback",
+        subtitle: "Dar um feedback (uma ou várias pessoas)",
         steps: [
-          "1. Acesse 'Feedbacks' no menu lateral.",
-          "2. Clique no botão 'Dar Feedback'.",
-          "3. Escolha o tipo: Positivo, Construtivo ou Negativo.",
-          "4. No campo 'Para quem?', selecione o colega.",
-          "5. Escreva o conteúdo do feedback.",
-          "6. Clique em 'Enviar Feedback'.",
+          "1. Acesse 'Feedbacks' e clique em 'Dar Feedback'.",
+          "2. No campo 'Para', selecione UMA ou VÁRIAS pessoas (ex: o time todo).",
+          "3. Escolha o tipo e escreva o conteúdo.",
+          "4. Envie — cada pessoa recebe o feedback e a notificação separadamente.",
+          "As abas 'Recebidos' e 'Enviados' mostram seu histórico.",
         ],
       },
       {
-        subtitle: "Visualizando seus feedbacks",
+        subtitle: "Feedback Pós-1:1",
         steps: [
-          "A aba 'Recebidos' mostra todos os feedbacks que outras pessoas enviaram para você.",
-          "A aba 'Enviados' mostra os feedbacks que você deu para outros.",
-          "Clique em qualquer feedback para ver o conteúdo completo.",
+          "Após uma reunião, abra o 1:1 (Minhas Reuniões → Visualizar) e clique em 'Feedback Pós-1:1'.",
+          "O destinatário já vem preenchido com o outro participante.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "eventos",
+    icon: CalendarPlus,
+    title: "Eventos",
+    content: [
+      {
+        subtitle: "Criar um evento",
+        steps: [
+          "Acesse 'Eventos' (menu Recursos) ou clique num dia do calendário.",
+          "1. Preencha título, data (e data fim, se durar vários dias).",
+          "2. Hora início/fim — deixe em branco para um evento de dia inteiro.",
+          "3. Descrição (opcional).",
+          "4. Visibilidade: 'Mostrar no calendário' (todos) ou 'Só para mim' (lembrete pessoal).",
+          "5. 'Marcar pessoas' — quem você marcar recebe notificação e vê o evento no calendário dele.",
         ],
       },
       {
-        subtitle: "Feedback Pós-One-on-One",
+        subtitle: "Repetir todo mês",
         steps: [
-          "Após uma reunião One-on-One, você pode dar um feedback diretamente pela tela da reunião.",
-          "1. Vá em 'One-on-One' → 'Minhas Reuniões'.",
-          "2. Clique em 'Visualizar' na reunião desejada.",
-          "3. No canto superior direito, clique em 'Feedback Pós-1:1'.",
-          "4. O campo 'Para quem?' já será preenchido automaticamente com o outro participante.",
-          "5. Escolha o tipo e escreva o feedback.",
+          "Ao criar, marque 'Repetir todo mês' e escolha por quantos meses (2 a 12).",
+          "Cria um evento por mês, na mesma data e hora.",
+          "Cada ocorrência é independente — dá para editar a data/hora de um mês só, sem mexer nos outros.",
+        ],
+      },
+      {
+        subtitle: "Página Eventos",
+        steps: [
+          "Lista todos os eventos agrupados por mês.",
+          "Clique em qualquer evento para abrir, ver as informações e editar.",
+          "O que você cria aqui aparece automaticamente no calendário da Home.",
         ],
       },
     ],
@@ -147,106 +162,19 @@ const SECTIONS: Section[] = [
     title: "One-on-One (Reuniões 1:1)",
     content: [
       {
-        subtitle: "O que é o One-on-One",
+        subtitle: "Minhas Reuniões (usuário/liderado)",
         steps: [
-          "One-on-One é uma reunião individual entre um gestor e um liderado.",
-          "Serve para alinhar expectativas, discutir desenvolvimento, pontos de melhoria e acompanhar metas.",
-          "A plataforma registra as anotações, tarefas e comentários de cada reunião.",
+          "Acesse One-on-One → 'Minhas reuniões' para ver seus 1:1.",
+          "Cada card mostra a data, a hora e os próximos passos.",
+          "Você marca como concluídos os próximos passos sob SUA responsabilidade (Liderado).",
         ],
       },
       {
-        subtitle: "Minhas Reuniões — para todos",
+        subtitle: "Próximos Passos (o que são)",
         steps: [
-          "1. Acesse 'One-on-One' → 'Minhas Reuniões' no menu lateral.",
-          "2. Você verá a lista de todas as reuniões em que você participa (como gestor ou como liderado).",
-          "3. Clique em 'Visualizar' para abrir os detalhes de uma reunião.",
-          "4. Na tela de detalhes você verá: data, anotações do gestor, próximos passos e comentários.",
-        ],
-      },
-      {
-        subtitle: "Próximos Passos (To-dos da reunião)",
-        steps: [
-          "Próximos Passos são tarefas definidas durante a reunião.",
-          "Cada tarefa tem um responsável: 'Líder' (gestor) ou 'Liderado'.",
-          "Se você é o liderado, pode marcar suas tarefas como concluídas diretamente na tela da reunião.",
-          "As tarefas concluídas ficam registradas com data e hora de conclusão.",
-        ],
-      },
-      {
-        subtitle: "Todas as Reuniões — apenas Admin",
-        steps: [
-          "Admins acessam 'One-on-One' → 'Todas as Reuniões' para visualizar e criar novas reuniões.",
-          "Para criar uma reunião: clique em 'Nova Reunião', selecione o liderado, defina a data e adicione anotações e tarefas.",
-          "As reuniões criadas aparecem no calendário da Home automaticamente.",
-        ],
-      },
-    ],
-  },
-  {
-    id: "sugestoes",
-    icon: Lightbulb,
-    title: "Sugestões",
-    content: [
-      {
-        subtitle: "O que são as Sugestões",
-        steps: [
-          "O canal de sugestões permite que qualquer funcionário envie ideias ou críticas construtivas para a empresa.",
-          "A sugestão pode ser anônima (seu nome não aparece) ou identificada (seu nome é mostrado).",
-        ],
-      },
-      {
-        subtitle: "Como enviar uma sugestão",
-        steps: [
-          "1. Acesse 'Sugestões' — se não aparecer no menu, fale com o admin pois pode ser que só admins vejam a lista, mas há um botão na Home.",
-          "2. Clique em 'Nova Sugestão'.",
-          "3. Escreva sua ideia ou sugestão no campo de texto.",
-          "4. Marque 'Enviar de forma anônima' se não quiser se identificar.",
-          "5. Clique em 'Enviar'.",
-        ],
-      },
-      {
-        subtitle: "Resposta às sugestões — Admin",
-        steps: [
-          "Admins visualizam todas as sugestões na tela de Sugestões.",
-          "Clique em uma sugestão para abrir o painel de resposta.",
-          "Escreva a resposta ou devolutiva no campo indicado e clique em 'Salvar resposta'.",
-          "Para excluir uma sugestão (quando necessário), clique no botão vermelho 'Excluir'.",
-        ],
-      },
-    ],
-  },
-  {
-    id: "deskinho",
-    icon: Bot,
-    title: "Deskinho — Assistente Virtual",
-    content: [
-      {
-        subtitle: "O que é o Deskinho",
-        steps: [
-          "O Deskinho é o assistente virtual inteligente da DeskRio.",
-          "Funciona como um ChatGPT interno da empresa — você pode perguntar qualquer coisa.",
-          "Ele conhece os processos e informações da empresa configuradas pelo admin.",
-          "Também tem acesso ao manual da plataforma e pode explicar qualquer funcionalidade.",
-        ],
-      },
-      {
-        subtitle: "O que você pode perguntar",
-        steps: [
-          "Dúvidas sobre como usar a plataforma: 'Como dar um feedback?', 'Onde fica o calendário?'",
-          "Dúvidas gerais de trabalho: 'Como escrever um e-mail profissional?', 'Como dar um feedback difícil?'",
-          "Perguntas de clientes que você precisa responder.",
-          "Qualquer outra questão — o Deskinho é um assistente geral.",
-        ],
-      },
-      {
-        subtitle: "Como usar o Deskinho",
-        steps: [
-          "1. Acesse 'Deskinho' no menu lateral (seção Recursos).",
-          "2. Digite sua pergunta no campo de texto na parte de baixo.",
-          "3. Pressione Enter ou clique no botão de enviar.",
-          "4. O Deskinho responde em tempo real, palavra por palavra.",
-          "5. Você pode continuar a conversa fazendo perguntas de acompanhamento.",
-          "6. Para começar uma nova conversa do zero, clique em 'Limpar' no canto superior direito.",
+          "São os combinados que saem da reunião — o que cada um vai fazer até o próximo encontro.",
+          "Cada item tem um Responsável: Líder (gestor) ou Liderado (você).",
+          "Quem é responsável marca como concluído — fica registrado quem fez e quando.",
         ],
       },
     ],
@@ -257,38 +185,50 @@ const SECTIONS: Section[] = [
     title: "Avisos",
     content: [
       {
-        subtitle: "O que são os Avisos",
+        subtitle: "O que são",
         steps: [
-          "Avisos são comunicados importantes da empresa para todos os funcionários.",
-          "Aparecem na Home e na página de Avisos.",
-          "Podem ter um link para mais informações.",
-        ],
-      },
-      {
-        subtitle: "Gerenciando Avisos — Admin",
-        steps: [
-          "1. Acesse 'Avisos' no menu lateral.",
-          "2. Clique no botão 'Novo Aviso' — abre uma janela para preencher.",
-          "3. Preencha o título, observação (opcional) e link (opcional).",
-          "4. Em 'Data (opcional)', defina uma data para o aviso aparecer no calendário da Home.",
-          "5. Em 'Visível para', escolha 'Todos os usuários' ou 'Somente admins'.",
-          "6. Clique em 'Publicar aviso'. Você pode criar quantos avisos quiser.",
-          "7. Para excluir um aviso, clique no ícone de lixeira ao lado dele.",
+          "Comunicados da empresa. Aparecem no Mural de Avisos da Home.",
+          "Podem ser direcionados a pessoas específicas (você só vê os destinados a você).",
+          "Quando têm data de início, aparecem também no calendário.",
         ],
       },
     ],
   },
   {
-    id: "relatorios",
-    icon: BarChart3,
-    title: "Relatórios",
+    id: "sugestoes",
+    icon: Lightbulb,
+    title: "Minhas Sugestões",
     content: [
       {
-        subtitle: "O que são os Relatórios",
+        subtitle: "Enviar e acompanhar",
         steps: [
-          "A seção de Relatórios exibe dashboards do Power BI integrados à plataforma.",
-          "Permite visualizar indicadores e métricas da empresa diretamente na Central de Gestão.",
-          "Novos relatórios são configurados pelo time de TI/admin.",
+          "Acesse 'Minhas Sugestões' e clique em 'Nova sugestão'.",
+          "Escreva sua ideia. Marque 'anônima' se não quiser se identificar (aí não fica vinculada a você).",
+          "Quando a equipe responder, você recebe uma notificação e a resposta aparece no card.",
+          "Você pode excluir suas próprias sugestões.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "deskinho",
+    icon: Bot,
+    title: "Deskinho — Assistente Virtual",
+    content: [
+      {
+        subtitle: "O que é",
+        steps: [
+          "O assistente virtual da DeskRio — funciona como um ChatGPT interno.",
+          "Responde dúvidas sobre a plataforma, sobre processos da empresa, perguntas de clientes e questões gerais de trabalho.",
+          "Ele aprende com os materiais que o admin sobe na Base de Conhecimento.",
+        ],
+      },
+      {
+        subtitle: "Como usar",
+        steps: [
+          "Acesse 'Deskinho' no menu, digite sua pergunta e pressione Enter.",
+          "Ele responde em tempo real. Continue a conversa com perguntas de acompanhamento.",
+          "Clique em 'Limpar' para começar uma conversa nova.",
         ],
       },
     ],
@@ -297,19 +237,86 @@ const SECTIONS: Section[] = [
 
 const ADMIN_SECTIONS: Section[] = [
   {
-    id: "usuarios",
-    icon: Users,
-    title: "Usuários",
+    id: "oneonone-admin",
+    icon: CalendarRange,
+    title: "One-on-One (Líder / Admin)",
     badge: "Admin",
     content: [
       {
-        subtitle: "Gerenciando usuários",
+        subtitle: "Todas as reuniões",
         steps: [
-          "1. Acesse 'Usuários' no menu de Administração.",
-          "2. Você verá a lista de todos os usuários cadastrados com nome, e-mail e perfil.",
-          "3. Para alterar o perfil de um usuário, clique no seletor de perfil ao lado do nome.",
-          "4. Os perfis disponíveis são: Admin (acesso total), Gestor (acesso intermediário) e Usuário (acesso básico).",
-          "5. Para criar um novo usuário, ele precisa fazer o cadastro pelo link de login — após criar a conta, o admin define o perfil.",
+          "Admin vê só 'Todas as reuniões' (o líder não tem 1:1 próprio — acompanha os liderados).",
+          "Cada card é um 1:1 de um liderado. Cards amarelos têm próximos passos pendentes.",
+          "No topo, um cartão mostra quantos liderados têm itens em aberto — clique para filtrar.",
+          "Use os filtros (Liderado, Mês, Pendências) e 'Ver próximos passos' para acompanhar.",
+        ],
+      },
+      {
+        subtitle: "Criar um 1:1",
+        steps: [
+          "Clique em 'Novo One-on-One': escolha o liderado, data e hora, escreva as anotações.",
+          "Adicione os Próximos Passos com o responsável (Líder ou Liderado).",
+          "Marque 'Repetir todo mês' para criar vários encontros mensais de uma vez.",
+          "O liderado recebe notificação do agendamento (e de remarcações).",
+        ],
+      },
+      {
+        subtitle: "Agendar para o time todo",
+        steps: [
+          "Em 'Todas as reuniões', clique em 'Agendar para o time'.",
+          "Adicione várias pessoas, cada uma com sua data e hora ('Adicionar time todo' preenche todos).",
+          "Opção de repetir mensalmente. Cria tudo de uma vez e notifica cada pessoa.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "avisos-admin",
+    icon: Megaphone,
+    title: "Avisos (Admin)",
+    badge: "Admin",
+    content: [
+      {
+        subtitle: "Criar e direcionar",
+        steps: [
+          "Em 'Avisos', clique em 'Novo Aviso'. Preencha título, observação e link (opcionais).",
+          "Início (opcional): a partir de quando aparece (e marca no calendário). Fim: quando some.",
+          "'Enviar para': Todos OU Pessoas específicas — ótimo para separar times (N1, N2, admins).",
+          "Só os destinatários veem o aviso no mural e no calendário, e são notificados.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "usuarios",
+    icon: Users,
+    title: "Usuários (Admin)",
+    badge: "Admin",
+    content: [
+      {
+        subtitle: "Gerenciar usuários",
+        steps: [
+          "Em 'Usuários', veja todos os cadastrados e altere o perfil de cada um (Admin / Usuário).",
+          "Na coluna Foto, passe o mouse no avatar e clique para subir a foto da pessoa (até 5MB).",
+          "Novos usuários se cadastram pelo login; depois o admin define o perfil.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "base-conhecimento",
+    icon: BookOpen,
+    title: "Base de Conhecimento da IA (Admin)",
+    badge: "Admin",
+    content: [
+      {
+        subtitle: "Alimentar o Deskinho",
+        steps: [
+          "Em Configurações → 'Base de Conhecimento da IA', clique em 'Enviar documento'.",
+          "Aceita PDF, Word (.docx), PowerPoint (.pptx), imagem (PNG/JPG) e texto.",
+          "PDFs com imagem e prints são lidos automaticamente por OCR (IA de visão).",
+          "O sistema extrai o conteúdo e o Deskinho passa a usar nas respostas.",
+          "Quanto mais materiais, mais o Deskinho sabe responder sobre a DeskRio.",
         ],
       },
     ],
@@ -321,44 +328,69 @@ const ADMIN_SECTIONS: Section[] = [
     badge: "Admin",
     content: [
       {
-        subtitle: "Foto de perfil (todos)",
+        subtitle: "Foto e senha (todos)",
         steps: [
-          "1. Acesse 'Configurações' no menu de Administração.",
-          "2. Na seção 'Foto de perfil', clique em 'Alterar foto'.",
-          "3. Selecione uma imagem no seu computador (JPG, PNG ou WebP, máximo 2MB).",
-          "4. A foto é atualizada automaticamente e aparece no cabeçalho e perfil.",
-        ],
-      },
-      {
-        subtitle: "Alterar senha (todos)",
-        steps: [
-          "1. Na seção 'Alterar senha', preencha a nova senha (mínimo 6 caracteres).",
-          "2. Confirme a senha no segundo campo.",
-          "3. Clique em 'Alterar senha'.",
-        ],
-      },
-      {
-        subtitle: "Base de Conhecimento da IA — Admin",
-        steps: [
-          "Em Configurações há o acesso à Base de Conhecimento da IA.",
-          "Envie materiais da empresa (PDF, Word, PowerPoint ou texto) com processos, FAQs e procedimentos.",
-          "O sistema extrai o conteúdo automaticamente e o Deskinho passa a usar nas respostas.",
-          "Quanto mais materiais você subir, mais o Deskinho sabe responder sobre a DeskRio.",
+          "Foto de perfil: clique em 'Alterar foto' (JPG/PNG/WebP, até 5MB).",
+          "Senha: preencha a nova senha (mín. 6 caracteres) e confirme.",
         ],
       },
       {
         subtitle: "Auditoria — Admin",
         steps: [
-          "A seção Auditoria registra as últimas 100 ações realizadas na plataforma.",
-          "Mostra: data/hora, usuário, módulo e descrição da ação.",
+          "Registra as últimas 100 ações na plataforma (feedbacks, sugestões, eventos, avisos, fotos, perfis…).",
           "Clique em qualquer registro para ver o histórico de Antes e Depois da mudança.",
-          "Ações registradas incluem: feedbacks, respostas a sugestões, eventos, avisos, fotos, perfis, etc.",
-          "Não registra ações no banco de dados — apenas ações feitas pelos usuários na interface.",
+          "Não registra ações no banco — só o que os usuários fazem na interface.",
+        ],
+      },
+    ],
+  },
+  {
+    id: "relatorios",
+    icon: BarChart3,
+    title: "Relatórios (Admin)",
+    badge: "Admin",
+    content: [
+      {
+        subtitle: "Dashboards",
+        steps: [
+          "Exibe dashboards do Power BI integrados à plataforma.",
+          "Novos relatórios são configurados pelo time de TI/admin.",
         ],
       },
     ],
   },
 ];
+
+function SectionAccordionItem({ section }: { section: Section }) {
+  return (
+    <AccordionItem value={section.id} className="border rounded-lg px-4 bg-card">
+      <AccordionTrigger className="hover:no-underline py-4">
+        <div className="flex items-center gap-3">
+          <section.icon className="h-5 w-5 text-primary shrink-0" />
+          <span className="font-semibold text-base text-foreground">{section.title}</span>
+          {section.badge && <Badge variant="secondary" className="text-[10px] h-4">{section.badge}</Badge>}
+        </div>
+      </AccordionTrigger>
+      <AccordionContent className="pb-4">
+        <div className="space-y-5 pt-1">
+          {section.content.map((block, bi) => (
+            <div key={bi}>
+              <h3 className="font-semibold text-sm text-foreground mb-2">{block.subtitle}</h3>
+              <ul className="space-y-1.5">
+                {block.steps.map((step, si) => (
+                  <li key={si} className="text-sm text-muted-foreground flex gap-2">
+                    <span className="text-primary shrink-0 mt-0.5">•</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  );
+}
 
 export default function Ajuda() {
   const { role } = useUserRole();
@@ -376,38 +408,7 @@ export default function Ajuda() {
 
       <Accordion type="multiple" className="space-y-2">
         {SECTIONS.map((section) => (
-          <AccordionItem
-            key={section.id}
-            value={section.id}
-            className="border rounded-lg px-4 bg-card"
-          >
-            <AccordionTrigger className="hover:no-underline py-4">
-              <div className="flex items-center gap-3">
-                <section.icon className="h-5 w-5 text-primary shrink-0" />
-                <span className="font-semibold text-base text-foreground">{section.title}</span>
-                {section.badge && (
-                  <Badge variant="secondary" className="text-[10px] h-4">{section.badge}</Badge>
-                )}
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="pb-4">
-              <div className="space-y-5 pt-1">
-                {section.content.map((block, bi) => (
-                  <div key={bi}>
-                    <h3 className="font-semibold text-sm text-foreground mb-2">{block.subtitle}</h3>
-                    <ul className="space-y-1.5">
-                      {block.steps.map((step, si) => (
-                        <li key={si} className="text-sm text-muted-foreground flex gap-2">
-                          <span className="text-primary shrink-0 mt-0.5">•</span>
-                          <span>{step}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
+          <SectionAccordionItem key={section.id} section={section} />
         ))}
 
         {isAdmin && (
@@ -416,38 +417,7 @@ export default function Ajuda() {
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Administração</p>
             </div>
             {ADMIN_SECTIONS.map((section) => (
-              <AccordionItem
-                key={section.id}
-                value={section.id}
-                className="border rounded-lg px-4 bg-card"
-              >
-                <AccordionTrigger className="hover:no-underline py-4">
-                  <div className="flex items-center gap-3">
-                    <section.icon className="h-5 w-5 text-primary shrink-0" />
-                    <span className="font-semibold text-base text-foreground">{section.title}</span>
-                    {section.badge && (
-                      <Badge variant="secondary" className="text-[10px] h-4">{section.badge}</Badge>
-                    )}
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  <div className="space-y-5 pt-1">
-                    {section.content.map((block, bi) => (
-                      <div key={bi}>
-                        <h3 className="font-semibold text-sm text-foreground mb-2">{block.subtitle}</h3>
-                        <ul className="space-y-1.5">
-                          {block.steps.map((step, si) => (
-                            <li key={si} className="text-sm text-muted-foreground flex gap-2">
-                              <span className="text-primary shrink-0 mt-0.5">•</span>
-                              <span>{step}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
+              <SectionAccordionItem key={section.id} section={section} />
             ))}
           </>
         )}
