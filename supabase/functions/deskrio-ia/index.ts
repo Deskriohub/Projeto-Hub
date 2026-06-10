@@ -167,10 +167,10 @@ Para outros assuntos, use seu conhecimento geral.`;
     const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${apiKey.trim()}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://centraldeskrio.com.br",
-        "X-Title": "Central DeskRio — Deskinho",
+        "X-Title": "Central DeskRio Deskinho",
       },
       body: JSON.stringify({
         model: "openai/gpt-4.1-mini",
