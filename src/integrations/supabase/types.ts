@@ -126,6 +126,7 @@ export type Database = {
           hora_inicio: string | null
           hora_fim: string | null
           dia_todo: boolean
+          visibilidade: string
           criado_por: string | null
           created_at: string
         }
@@ -138,6 +139,7 @@ export type Database = {
           hora_inicio?: string | null
           hora_fim?: string | null
           dia_todo?: boolean
+          visibilidade?: string
           criado_por?: string | null
           created_at?: string
         }
@@ -150,6 +152,7 @@ export type Database = {
           hora_inicio?: string | null
           hora_fim?: string | null
           dia_todo?: boolean
+          visibilidade?: string
           criado_por?: string | null
           created_at?: string
         }

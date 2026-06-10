@@ -8,7 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Users } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Users, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
@@ -24,6 +27,7 @@ interface Evento {
   hora_inicio: string | null;
   hora_fim: string | null;
   dia_todo: boolean;
+  visibilidade: string;
   criado_por: string | null;
   criador_nome?: string;
 }
@@ -78,6 +82,7 @@ const emptyForm = () => ({
   hora_inicio: "",
   hora_fim: "",
   dia_todo: true,
+  visibilidade: "todos" as "todos" | "privado",
 });
 
 export function EventCalendar() {
@@ -106,7 +111,7 @@ export function EventCalendar() {
     const [{ data: evData }, { data: reData }] = await Promise.all([
       supabase
         .from("eventos")
-        .select("id, titulo, descricao, data_inicio, data_fim, hora_inicio, hora_fim, dia_todo, criado_por")
+        .select("id, titulo, descricao, data_inicio, data_fim, hora_inicio, hora_fim, dia_todo, visibilidade, criado_por")
         .lte("data_inicio", endOfMonth)
         .gte("data_inicio", startOfMonth)
         .order("data_inicio", { ascending: true }),
@@ -211,6 +216,7 @@ export function EventCalendar() {
       hora_inicio: e.hora_inicio || "",
       hora_fim: e.hora_fim || "",
       dia_todo: e.dia_todo,
+      visibilidade: (e.visibilidade as "todos" | "privado") || "todos",
     });
     setDialogOpen(true);
   };
@@ -229,6 +235,7 @@ export function EventCalendar() {
       hora_inicio: form.dia_todo ? null : (form.hora_inicio || null),
       hora_fim: form.dia_todo ? null : (form.hora_fim || null),
       dia_todo: form.dia_todo,
+      visibilidade: form.visibilidade,
       criado_por: user?.id ?? null,
     };
 
@@ -417,7 +424,10 @@ export function EventCalendar() {
                   {selectedDayEvts.map((e) => (
                     <div key={e.id} className={`flex items-start justify-between gap-2 p-2 rounded-md border ${colorForEvent(e.id)}`}>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium">{e.titulo}</p>
+                        <p className="text-sm font-medium flex items-center gap-1">
+                          {e.visibilidade === "privado" && <Lock className="h-3 w-3 opacity-60" />}
+                          {e.titulo}
+                        </p>
                         {!e.dia_todo && e.hora_inicio && (
                           <p className="text-xs opacity-70">{e.hora_inicio.slice(0, 5)}{e.hora_fim ? ` – ${e.hora_fim.slice(0, 5)}` : ""}</p>
                         )}
@@ -484,6 +494,18 @@ export function EventCalendar() {
             <div>
               <Label htmlFor="evt-desc">Descrição</Label>
               <Textarea id="evt-desc" value={form.descricao} onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))} placeholder="Detalhes opcionais..." rows={2} className="mt-1 resize-none" />
+            </div>
+            <div>
+              <Label htmlFor="evt-vis">Visibilidade</Label>
+              <Select value={form.visibilidade} onValueChange={(v) => setForm((f) => ({ ...f, visibilidade: v as "todos" | "privado" }))}>
+                <SelectTrigger id="evt-vis" className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">📅 Mostrar no calendário (todos veem)</SelectItem>
+                  <SelectItem value="privado">🔒 Só para mim (lembrete pessoal)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter className="gap-2 flex-wrap">

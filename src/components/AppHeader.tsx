@@ -11,6 +11,7 @@ import { LogOut, Moon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", gestor: "Gestor", geral: "Geral" };
 
@@ -32,6 +33,8 @@ export function AppHeader() {
       <div className="flex items-center gap-3">
         <SidebarTrigger />
       </div>
+      <div className="flex items-center gap-2">
+      <NotificationBell />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-3 cursor-pointer outline-none">
@@ -57,6 +60,7 @@ export function AppHeader() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
     </header>
   );
 }
