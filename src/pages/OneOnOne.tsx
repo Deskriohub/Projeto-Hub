@@ -253,7 +253,7 @@ const OneOnOne = () => {
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <Users className="h-6 w-6 text-primary" /> Todas as reuniões
           </h1>
-          <p className="text-muted-foreground mt-1">Histórico de one-on-ones com seus liderados.</p>
+          <p className="text-muted-foreground mt-1">Acompanhe os 1:1 dos liderados e os próximos passos de cada um.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" onClick={() => setBulkOpen(true)}>
@@ -269,6 +269,11 @@ const OneOnOne = () => {
       </div>
 
       <BulkOneOnOneDialog open={bulkOpen} onClose={() => setBulkOpen(false)} onCreated={reload} />
+
+      <div className="mb-6 rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+        <p>📋 <strong className="text-foreground">Como acompanhar:</strong> cada card é um 1:1 de um liderado. Os cards <span className="text-amber-700 font-medium">amarelos</span> têm próximos passos <strong className="text-foreground">pendentes</strong>.</p>
+        <p>🔎 Use o filtro <strong className="text-foreground">Pendências → Com itens pendentes</strong> para ver só quem tem tarefa em aberto. Clique em <strong className="text-foreground">"Ver próximos passos"</strong> para abrir os itens e ver quem é o responsável e o que já foi concluído.</p>
+      </div>
 
       <div className="flex flex-wrap gap-3 mb-6">
         <div className="space-y-1">

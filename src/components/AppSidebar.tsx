@@ -63,10 +63,12 @@ export function AppSidebar() {
     { title: "Home", url: "/", icon: Home },
   ];
 
-  const oneOnOneSubItems: { title: string; url: string; minRole: AppRole }[] = [
-    { title: "Minhas reuniões", url: "/meus-one-on-one", minRole: "geral" },
-    { title: "Todas as reuniões", url: "/one-on-one", minRole: "admin" },
-  ];
+  // Admin/gestor é líder: acompanha os liderados em "Todas as reuniões" (não tem 1:1 próprio).
+  // Usuário comum é liderado: vê só "Minhas reuniões".
+  const oneOnOneSubItems: { title: string; url: string; minRole: AppRole }[] =
+    role === "admin"
+      ? [{ title: "Todas as reuniões", url: "/one-on-one", minRole: "admin" }]
+      : [{ title: "Minhas reuniões", url: "/meus-one-on-one", minRole: "geral" }];
 
   const recursosTail: SimpleNavItem[] = [
     { title: "Avisos", url: "/avisos", icon: Megaphone },
