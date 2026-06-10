@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { logAudit } from "@/lib/auditLog";
 import { notificar } from "@/lib/notify";
+import { gerarDatasMensais } from "@/lib/recorrencia";
 import { UserMultiSelect, UserOption } from "@/components/UserMultiSelect";
 import { toast } from "@/hooks/use-toast";
 
@@ -39,6 +40,7 @@ interface ReuniaoItem {
   id: string;
   titulo: string;
   data: string;
+  hora: string | null;
 }
 
 interface AvisoItem {
@@ -87,6 +89,8 @@ const emptyForm = () => ({
   dia_todo: true,
   visibilidade: "todos" as "todos" | "privado",
   participantes: [] as string[],
+  repetir: false,
+  meses: 3,
 });
 
 export function EventCalendar() {
@@ -147,7 +151,7 @@ export function EventCalendar() {
     // REUNIÕES 1:1
     const { data: reData, error: reError } = await supabase
       .from("one_on_one")
-      .select("id, data_reuniao, liderado_nome")
+      .select("id, data_reuniao, hora_reuniao, liderado_nome")
       .or(`gestor_id.eq.${user.id},liderado_id.eq.${user.id}`)
       .gte("data_reuniao", startOfMonth)
       .lte("data_reuniao", endOfMonth);
@@ -160,6 +164,7 @@ export function EventCalendar() {
         id: r.id,
         titulo: `1:1 — ${r.liderado_nome}`,
         data: r.data_reuniao,
+        hora: r.hora_reuniao ? r.hora_reuniao.slice(0, 5) : null,
       })));
     }
 
@@ -241,6 +246,8 @@ export function EventCalendar() {
       dia_todo: e.dia_todo,
       visibilidade: (e.visibilidade as "todos" | "privado") || "todos",
       participantes: e.participantes ?? [],
+      repetir: false,
+      meses: 3,
     });
     setDialogOpen(true);
   };
@@ -275,15 +282,27 @@ export function EventCalendar() {
           antes: resumo(editingEvento),
           depois: resumo({ ...form }),
         });
-        // Notifica participantes novos (que não estavam antes)
         const antesIds = editingEvento.participantes ?? [];
+        const horaAntes = editingEvento.hora_inicio ? editingEvento.hora_inicio.slice(0, 5) : "";
+        const mudouDataHora = editingEvento.data_inicio !== form.data_inicio || horaAntes !== (form.hora_inicio || "");
+        // Participantes novos: aviso de marcação
         const novos = form.participantes.filter((id) => !antesIds.includes(id) && id !== user?.id);
         notificar(novos, {
           titulo: `Você foi marcado em um evento`,
-          descricao: `${form.titulo} — ${form.data_inicio}`,
+          descricao: `${form.titulo} — ${form.data_inicio}${!form.dia_todo && form.hora_inicio ? ` às ${form.hora_inicio}` : ""}`,
           tipo: "evento",
           link: "/",
         });
+        // Participantes que já estavam: aviso de remarcação (se data/hora mudou)
+        if (mudouDataHora) {
+          const jaEstavam = antesIds.filter((id) => form.participantes.includes(id) && id !== user?.id);
+          notificar(jaEstavam, {
+            titulo: `Evento remarcado: ${form.titulo}`,
+            descricao: `Nova data: ${form.data_inicio}${!form.dia_todo && form.hora_inicio ? ` às ${form.hora_inicio}` : ""}.`,
+            tipo: "evento",
+            link: "/",
+          });
+        }
         toast({ title: "Evento atualizado" });
       }
     } else {
@@ -293,13 +312,22 @@ export function EventCalendar() {
         if (user) logAudit(user.id, fullName, `Criou o evento "${form.titulo}"`, "Calendário", {
           depois: resumo({ ...form }),
         });
+        // Recorrência: cria os próximos eventos mensais
+        const datas = form.repetir ? gerarDatasMensais(form.data_inicio, form.meses).slice(1) : [];
+        if (datas.length > 0) {
+          await supabase.from("eventos").insert(
+            datas.map((d) => ({ ...payload, data_inicio: d, data_fim: null }))
+          );
+        }
         notificar(form.participantes.filter((id) => id !== user?.id), {
           titulo: `Você foi marcado em um evento`,
-          descricao: `${form.titulo} — ${form.data_inicio}`,
+          descricao: datas.length > 0
+            ? `${form.titulo} — a partir de ${form.data_inicio}, mensal`
+            : `${form.titulo} — ${form.data_inicio}${!form.dia_todo && form.hora_inicio ? ` às ${form.hora_inicio}` : ""}`,
           tipo: "evento",
           link: "/",
         });
-        toast({ title: "Evento criado" });
+        toast({ title: datas.length > 0 ? `Evento criado (${datas.length + 1} ocorrências)` : "Evento criado" });
       }
     }
 
@@ -466,7 +494,7 @@ export function EventCalendar() {
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <Users className="h-3.5 w-3.5 shrink-0" />
-                        <p className="text-sm font-medium truncate">{r.titulo}</p>
+                        <p className="text-sm font-medium truncate">{r.titulo}{r.hora ? ` · ${r.hora}` : ""}</p>
                       </div>
                       <span className="text-[10px] opacity-60 shrink-0">ver reunião →</span>
                     </div>
@@ -573,6 +601,34 @@ export function EventCalendar() {
                 </p>
               )}
             </div>
+            {!editingEvento && (
+              <div className="rounded-md border border-border/60 bg-muted/30 p-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    id="evt-repetir"
+                    type="checkbox"
+                    checked={form.repetir}
+                    onChange={(e) => setForm((f) => ({ ...f, repetir: e.target.checked }))}
+                    className="rounded"
+                  />
+                  <Label htmlFor="evt-repetir" className="cursor-pointer">Repetir todo mês</Label>
+                  {form.repetir && (
+                    <div className="flex items-center gap-1.5 ml-2">
+                      <span className="text-sm text-muted-foreground">por</span>
+                      <Input type="number" min={2} max={12} value={form.meses}
+                        onChange={(e) => setForm((f) => ({ ...f, meses: Math.min(12, Math.max(2, Number(e.target.value) || 2)) }))}
+                        className="w-16 h-8" />
+                      <span className="text-sm text-muted-foreground">meses</span>
+                    </div>
+                  )}
+                </div>
+                {form.repetir && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Serão criados {form.meses} eventos mensais. Você pode editar cada um depois (data/hora).
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter className="gap-2 flex-wrap">
             {canEditOrDelete && (

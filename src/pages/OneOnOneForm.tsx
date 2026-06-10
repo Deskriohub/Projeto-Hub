@@ -41,7 +41,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
+import { notificar } from "@/lib/notify";
+import { gerarDatasMensais } from "@/lib/recorrencia";
 import OneOnOneComentarios from "@/components/OneOnOneComentarios";
+
+function fmtDataBR(d: string) {
+  const [y, m, dd] = d.split("-");
+  return `${dd}/${m}/${y}`;
+}
 
 const EMOJIS = ["🌟", "💪", "🤝", "🎯", "🚀", "💡", "❤️", "🏆", "👏", "😊"];
 
@@ -93,6 +100,9 @@ const OneOnOneForm = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [liderado, setLiderado] = useState<string>("");
   const [data, setData] = useState<string>(todayStr());
+  const [hora, setHora] = useState<string>("");
+  const [repetir, setRepetir] = useState<boolean>(false);
+  const [meses, setMeses] = useState<number>(3);
   const [anotacoes, setAnotacoes] = useState<string>("");
   const [todos, setTodos] = useState<Todo[]>([]);
   const [novoTodo, setNovoTodo] = useState<string>("");
@@ -103,6 +113,8 @@ const OneOnOneForm = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const origDataRef = useRef<string>("");
+  const origHoraRef = useRef<string>("");
 
   useEffect(() => {
     const load = async () => {
@@ -120,7 +132,7 @@ const OneOnOneForm = () => {
         setLoading(true);
         const { data: rec, error } = await supabase
           .from("one_on_one")
-          .select("liderado_id, data_reuniao, anotacoes, gestor_id")
+          .select("liderado_id, data_reuniao, hora_reuniao, anotacoes, gestor_id")
           .eq("id", id)
           .maybeSingle();
         if (error || !rec) {
@@ -131,7 +143,10 @@ const OneOnOneForm = () => {
         setGestorId(rec.gestor_id);
         setLiderado(rec.liderado_id);
         setData(rec.data_reuniao);
+        setHora((rec.hora_reuniao as string | null)?.slice(0, 5) || "");
         setAnotacoes(rec.anotacoes || "");
+        origDataRef.current = rec.data_reuniao;
+        origHoraRef.current = (rec.hora_reuniao as string | null)?.slice(0, 5) || "";
 
         const { data: ts } = await supabase
           .from("one_on_one_todos")
@@ -285,6 +300,7 @@ const OneOnOneForm = () => {
           liderado_id: liderado,
           liderado_nome,
           data_reuniao: data,
+          hora_reuniao: hora || null,
           anotacoes,
           updated_at: new Date().toISOString(),
         })
@@ -294,6 +310,15 @@ const OneOnOneForm = () => {
         setSaving(false);
         return;
       }
+      // Notifica o liderado se a data ou a hora mudou (remarcação)
+      if (liderado !== user.id && (data !== origDataRef.current || hora !== origHoraRef.current)) {
+        notificar([liderado], {
+          titulo: "Seu 1:1 foi remarcado",
+          descricao: `Nova data: ${fmtDataBR(data)}${hora ? ` às ${hora}` : ""}.`,
+          tipo: "reuniao",
+          link: `/meus-one-on-one/${recordId}`,
+        });
+      }
     } else {
       const { data: inserted, error } = await supabase
         .from("one_on_one")
@@ -302,6 +327,7 @@ const OneOnOneForm = () => {
           liderado_id: liderado,
           liderado_nome,
           data_reuniao: data,
+          hora_reuniao: hora || null,
           anotacoes,
         })
         .select("id")
@@ -312,6 +338,34 @@ const OneOnOneForm = () => {
         return;
       }
       recordId = inserted.id;
+
+      // Recorrência: cria as próximas reuniões mensais (vazias), mesmo dia e hora
+      const datas = repetir ? gerarDatasMensais(data, meses).slice(1) : [];
+      if (datas.length > 0) {
+        await supabase.from("one_on_one").insert(
+          datas.map((d) => ({
+            gestor_id: user.id,
+            liderado_id: liderado,
+            liderado_nome,
+            data_reuniao: d,
+            hora_reuniao: hora || null,
+            anotacoes: "",
+          }))
+        );
+      }
+
+      // Notifica o liderado do agendamento
+      if (liderado !== user.id) {
+        const qtd = 1 + datas.length;
+        notificar([liderado], {
+          titulo: qtd > 1 ? `Você tem ${qtd} 1:1 agendados` : "Você tem um 1:1 agendado",
+          descricao: qtd > 1
+            ? `A partir de ${fmtDataBR(data)}${hora ? ` às ${hora}` : ""}, repetindo mensalmente.`
+            : `Dia ${fmtDataBR(data)}${hora ? ` às ${hora}` : ""}.`,
+          tipo: "reuniao",
+          link: `/meus-one-on-one/${recordId}`,
+        });
+      }
     }
 
     const toDelete = todos.filter((t) => t._toDelete && t.id).map((t) => t.id!) ;
@@ -409,17 +463,61 @@ const OneOnOneForm = () => {
                 placeholder="Selecione um colaborador"
               />
             </div>
-            <div>
-              <Label htmlFor="data" className="mb-2 block">Data da reunião</Label>
-              <Input
-                id="data"
-                type="date"
-                value={data}
-                onChange={(e) => setData(e.target.value)}
-                disabled={readOnly}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="data" className="mb-2 block">Data</Label>
+                <Input
+                  id="data"
+                  type="date"
+                  value={data}
+                  onChange={(e) => setData(e.target.value)}
+                  disabled={readOnly}
+                />
+              </div>
+              <div>
+                <Label htmlFor="hora" className="mb-2 block">Hora</Label>
+                <Input
+                  id="hora"
+                  type="time"
+                  value={hora}
+                  onChange={(e) => setHora(e.target.value)}
+                  disabled={readOnly}
+                />
+              </div>
             </div>
           </div>
+
+          {!isEdit && (
+            <div className="rounded-md border border-border/60 bg-muted/30 p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  id="repetir"
+                  type="checkbox"
+                  checked={repetir}
+                  onChange={(e) => setRepetir(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="repetir" className="cursor-pointer">Repetir todo mês</Label>
+                {repetir && (
+                  <div className="flex items-center gap-1.5 ml-2">
+                    <span className="text-sm text-muted-foreground">por</span>
+                    <Input
+                      type="number" min={2} max={12}
+                      value={meses}
+                      onChange={(e) => setMeses(Math.min(12, Math.max(2, Number(e.target.value) || 2)))}
+                      className="w-16 h-8"
+                    />
+                    <span className="text-sm text-muted-foreground">meses</span>
+                  </div>
+                )}
+              </div>
+              {repetir && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Serão criados {meses} 1:1 mensais (mesmo dia e hora). Você pode editar a data/hora de cada um depois, individualmente.
+                </p>
+              )}
+            </div>
+          )}
 
           <div>
             <Label htmlFor="anotacoes" className="mb-2 block">Anotações</Label>

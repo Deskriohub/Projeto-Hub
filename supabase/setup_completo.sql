@@ -42,6 +42,9 @@ CREATE POLICY "modify_eventos" ON public.eventos FOR UPDATE USING (criado_por = 
 DROP POLICY IF EXISTS "delete_eventos" ON public.eventos;
 CREATE POLICY "delete_eventos" ON public.eventos FOR DELETE USING (criado_por = auth.uid() OR public.has_role(auth.uid(), 'admin'));
 
+-- ---------- ONE-ON-ONE ----------
+ALTER TABLE public.one_on_one ADD COLUMN IF NOT EXISTS hora_reuniao time;
+
 -- ---------- SUGESTOES ----------
 ALTER TABLE public.sugestoes ADD COLUMN IF NOT EXISTS resposta      text;
 ALTER TABLE public.sugestoes ADD COLUMN IF NOT EXISTS respondido_em timestamptz;

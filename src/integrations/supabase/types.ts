@@ -327,6 +327,7 @@ configuracoes: {
           anotacoes: string | null
           created_at: string | null
           data_reuniao: string
+          hora_reuniao: string | null
           gestor_id: string
           id: string
           liderado_id: string
@@ -337,6 +338,7 @@ configuracoes: {
           anotacoes?: string | null
           created_at?: string | null
           data_reuniao: string
+          hora_reuniao?: string | null
           gestor_id: string
           id?: string
           liderado_id: string
@@ -347,6 +349,7 @@ configuracoes: {
           anotacoes?: string | null
           created_at?: string | null
           data_reuniao?: string
+          hora_reuniao?: string | null
           gestor_id?: string
           id?: string
           liderado_id?: string
