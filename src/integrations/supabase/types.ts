@@ -19,6 +19,8 @@ export type Database = {
           id: string
           titulo: string
           link: string | null
+          observacao: string | null
+          publico: string
           ativo: boolean
           created_at: string
           created_by: string | null
@@ -27,6 +29,8 @@ export type Database = {
           id?: string
           titulo: string
           link?: string | null
+          observacao?: string | null
+          publico?: string
           ativo?: boolean
           created_at?: string
           created_by?: string | null
@@ -35,9 +39,50 @@ export type Database = {
           id?: string
           titulo?: string
           link?: string | null
+          observacao?: string | null
+          publico?: string
           ativo?: boolean
           created_at?: string
           created_by?: string | null
+        }
+        Relationships: []
+      }
+      eventos: {
+        Row: {
+          id: string
+          titulo: string
+          descricao: string | null
+          data_inicio: string
+          data_fim: string | null
+          hora_inicio: string | null
+          hora_fim: string | null
+          dia_todo: boolean
+          criado_por: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          titulo: string
+          descricao?: string | null
+          data_inicio: string
+          data_fim?: string | null
+          hora_inicio?: string | null
+          hora_fim?: string | null
+          dia_todo?: boolean
+          criado_por?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          titulo?: string
+          descricao?: string | null
+          data_inicio?: string
+          data_fim?: string | null
+          hora_inicio?: string | null
+          hora_fim?: string | null
+          dia_todo?: boolean
+          criado_por?: string | null
+          created_at?: string
         }
         Relationships: []
       }
@@ -304,6 +349,8 @@ export type Database = {
           created_at: string | null
           id: string
           texto: string
+          resposta: string | null
+          respondido_em: string | null
         }
         Insert: {
           anonima?: boolean
@@ -312,6 +359,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           texto: string
+          resposta?: string | null
+          respondido_em?: string | null
         }
         Update: {
           anonima?: boolean
@@ -320,6 +369,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           texto?: string
+          resposta?: string | null
+          respondido_em?: string | null
         }
         Relationships: []
       }

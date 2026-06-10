@@ -18,8 +18,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 
 interface SidebarReport { name: string; url?: string; reportId?: string; workspaceId?: string; isPaginated?: boolean; }
 
-// ⚠️ Relatórios Power BI do DeskRio — preencha com os reportId/workspaceId DA DESKRIO.
-// Formato: { name: "Vendas", reportId: "xxxx", workspaceId: "yyyy" }  ou  { name: "X", url: "https://app.powerbi.com/view?r=..." }
 const dashboardsDeskRio: SidebarReport[] = [];
 
 function buildReportUrl(report: SidebarReport): string {
@@ -163,6 +161,11 @@ export function AppSidebar() {
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {dashboardsDeskRio.length === 0 && !collapsed && (
+                <SidebarMenuItem>
+                  <span className="pl-9 text-xs text-sidebar-foreground/40 italic">Em Breve</span>
+                </SidebarMenuItem>
+              )}
               {dashboardsDeskRio.map((report) => (
                 <SidebarMenuItem key={report.name}>
                   <SidebarMenuButton

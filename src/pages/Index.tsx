@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { CompactCards } from "@/components/home/CompactCards";
-import { DestaquesPodium } from "@/components/home/DestaquesPodium";
 import { EventCalendar } from "@/components/home/EventCalendar";
 import { NoticeBoard } from "@/components/home/NoticeBoard";
 import { ElogiosRecebidos } from "@/components/home/ElogiosRecebidos";
@@ -25,13 +24,12 @@ const Index = () => {
       </div>
       <SugestaoModal open={sugestaoOpen} onOpenChange={setSugestaoOpen} />
       <CompactCards />
-      <NoticeBoard />
-      <ElogiosRecebidos />
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-6 items-start">
-        <DestaquesPodium />
-        <div className="min-w-0 overflow-hidden">
-          <EventCalendar />
+        <div className="space-y-6">
+          <NoticeBoard />
+          <ElogiosRecebidos />
         </div>
+        <EventCalendar />
       </div>
     </div>
   );

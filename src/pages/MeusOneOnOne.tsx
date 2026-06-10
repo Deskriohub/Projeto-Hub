@@ -77,7 +77,7 @@ const MeusOneOnOne = () => {
       const { data, error } = await supabase
         .from("one_on_one")
         .select("id, data_reuniao, liderado_id, liderado_nome, gestor_id, anotacoes, one_on_one_todos(id, texto, concluido, responsavel, concluido_por_nome, concluido_em)")
-        .eq("liderado_id", user.id)
+        .or(`liderado_id.eq.${user.id},gestor_id.eq.${user.id}`)
         .order("data_reuniao", { ascending: false });
       if (error) {
         toast({ title: "Erro ao carregar", description: error.message, variant: "destructive" });
@@ -207,7 +207,7 @@ const MeusOneOnOne = () => {
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Users className="h-6 w-6 text-primary" /> Minhas reuniões
         </h1>
-        <p className="text-muted-foreground mt-1">One-on-ones em que você é o liderado.</p>
+        <p className="text-muted-foreground mt-1">One-on-ones em que você participa como líder ou liderado.</p>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6">

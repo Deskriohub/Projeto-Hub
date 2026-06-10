@@ -1,11 +1,25 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Target, Eye, Heart } from "lucide-react";
 
-// ⚠️ Ajuste missão/visão/valores conforme a DeskRio.
 const items = [
-  { label: "MISSÃO", text: "Nossa missão.", borderColor: "border-t-accent", icon: Target },
-  { label: "VISÃO", text: "Nossa visão.", borderColor: "border-t-accent", icon: Eye },
-  { label: "VALORES", text: "Nossos valores.", borderColor: "border-t-primary", icon: Heart },
+  {
+    label: "MISSÃO",
+    icon: Target,
+    borderColor: "border-t-accent",
+    text: "Transformar o atendimento ao cliente por meio de uma plataforma inteligente, ágil e centralizada. Conectamos empresas aos seus clientes através dos principais canais digitais — WhatsApp, Facebook e Instagram — promovendo uma comunicação mais eficiente, humanizada e com foco em resultados.",
+  },
+  {
+    label: "VISÃO",
+    icon: Eye,
+    borderColor: "border-t-accent",
+    text: "Ser a plataforma de referência para empresas que desejam profissionalizar e centralizar seu atendimento digital, tornando cada conversa uma oportunidade de fidelização.",
+  },
+  {
+    label: "VALORES",
+    icon: Heart,
+    borderColor: "border-t-primary",
+    text: "Foco no Cliente · Simplicidade · Inovação Contínua · Humanização · Parceria Estratégica · Confiança e Segurança",
+  },
 ];
 
 export function CompactCards() {

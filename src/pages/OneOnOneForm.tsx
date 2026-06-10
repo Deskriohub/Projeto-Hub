@@ -198,7 +198,10 @@ const OneOnOneForm = () => {
 
   const handleAddTodo = () => {
     const t = novoTodo.trim();
-    if (!t) return;
+    if (!t) {
+      toast({ title: "Digite o item antes de adicionar", variant: "destructive" });
+      return;
+    }
     setTodos((prev) => [...prev, { texto: t, concluido: false, responsavel: "", _isNew: true }]);
     setNovoTodo("");
   };
