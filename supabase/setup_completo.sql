@@ -190,6 +190,9 @@ UPDATE public.profiles SET gestor_id = (SELECT id FROM public.profiles WHERE ema
   WHERE email IN ('leonardofmcalvet@gmail.com','allexthiagodev@gmail.com','vinisaio10@gmail.com','allanangelonf@gmail.com','kevinmonteiro343@gmail.com');
 
 -- ---------- ONE-ON-ONE: admin de time vê só o time dele; dono vê tudo ----------
+-- Remove TODAS as policies antigas de SELECT (qualquer uma que sobrasse daria acesso amplo a admin)
+DROP POLICY IF EXISTS "Admin sees all records" ON public.one_on_one;
+DROP POLICY IF EXISTS "Gestor sees own records" ON public.one_on_one;
 DROP POLICY IF EXISTS "Admin or gestor see all except own as liderado" ON public.one_on_one;
 DROP POLICY IF EXISTS "Admin scoped one_on_one select" ON public.one_on_one;
 CREATE POLICY "Admin scoped one_on_one select" ON public.one_on_one FOR SELECT TO authenticated
@@ -203,6 +206,17 @@ USING (
     )
   )
 );
+-- Liderado sempre vê os próprios 1:1
+DROP POLICY IF EXISTS "Liderado sees own records" ON public.one_on_one;
+CREATE POLICY "Liderado sees own records" ON public.one_on_one FOR SELECT TO authenticated
+  USING (auth.uid() = liderado_id);
+-- Dono gerencia tudo (manutenção): ver/criar/editar/excluir qualquer 1:1
+DROP POLICY IF EXISTS "Owner manage one_on_one" ON public.one_on_one;
+CREATE POLICY "Owner manage one_on_one" ON public.one_on_one FOR ALL TO authenticated
+  USING (public.is_owner(auth.uid())) WITH CHECK (public.is_owner(auth.uid()));
+DROP POLICY IF EXISTS "Owner manage one_on_one_todos" ON public.one_on_one_todos;
+CREATE POLICY "Owner manage one_on_one_todos" ON public.one_on_one_todos FOR ALL TO authenticated
+  USING (public.is_owner(auth.uid())) WITH CHECK (public.is_owner(auth.uid()));
 
 -- ---------- AUDITORIA: logs de 1:1 só para o dono e o gestor do time ----------
 ALTER TABLE public.auditoria ADD COLUMN IF NOT EXISTS time_gestor_id uuid;

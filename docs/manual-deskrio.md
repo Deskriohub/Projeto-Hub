@@ -18,7 +18,7 @@ O perfil de cada pessoa é definido por um admin na tela de Usuários. A área "
 Cada admin é líder de um time. O "Gestor responsável" de cada pessoa só pode ser definido/alterado pelo **Dono da plataforma** (na tela de Usuários) — os demais admins veem o gestor, mas não podem mudá-lo. Com isso:
 - Um admin de time vê apenas os One-on-One do próprio time (e os registros de auditoria de 1:1 do próprio time).
 - Um admin não vê os 1:1 nem os logs de 1:1 de outro time.
-- O Dono da plataforma vê tudo, acima dos admins de time.
+- O Dono da plataforma vê e gerencia tudo (inclusive editar/excluir qualquer 1:1), acima dos admins de time.
 - Assuntos gerais (avisos, eventos, elogios, fotos, etc.) continuam visíveis a todos os admins na auditoria; a restrição por time vale para One-on-One.
 - Nos seletores de pessoas (escolher liderado no 1:1, marcar pessoas em eventos, destinatários específicos de avisos), o admin só vê as pessoas do próprio time; o Dono vê todos. Aviso "Todos" e evento "Todos veem" continuam alcançando a empresa inteira.
 
