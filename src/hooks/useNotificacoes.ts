@@ -31,9 +31,23 @@ export function useNotificacoes() {
 
   useEffect(() => { fetchNotificacoes(); }, [fetchNotificacoes]);
 
-  // Atualiza periodicamente para pegar novas notificações
+  // Tempo real: novas notificações aparecem na hora (sem esperar o polling)
   useEffect(() => {
-    const id = setInterval(() => { fetchNotificacoes(); }, 60000);
+    if (!user) return;
+    const channel = supabase
+      .channel(`notif-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notificacoes", filter: `user_id=eq.${user.id}` },
+        () => { fetchNotificacoes(); },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, fetchNotificacoes]);
+
+  // Fallback: atualiza a cada 20s caso o tempo real não esteja ativo
+  useEffect(() => {
+    const id = setInterval(() => { fetchNotificacoes(); }, 20000);
     return () => clearInterval(id);
   }, [fetchNotificacoes]);
 
