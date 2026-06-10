@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Lightbulb, Check, MessageSquare, Plus } from "lucide-react";
+import { Lightbulb, Check, MessageSquare, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SugestaoModal } from "@/components/SugestaoModal";
+import { toast } from "@/hooks/use-toast";
 
 interface Sugestao {
   id: string;
@@ -41,6 +42,16 @@ const MinhasSugestoes = () => {
 
   useEffect(() => { load(); }, [user]);
 
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("sugestoes").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      return;
+    }
+    setItems((prev) => prev.filter((s) => s.id !== id));
+    toast({ title: "Sugestão excluída" });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -67,16 +78,26 @@ const MinhasSugestoes = () => {
           {items.map((s) => (
             <Card key={s.id}>
               <CardContent className="p-4">
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <span className="text-xs text-muted-foreground">{formatDate(s.created_at)}</span>
-                  {s.anonima && <Badge variant="outline" className="text-[10px] h-4">Anônima</Badge>}
-                  {s.resposta ? (
-                    <Badge variant="secondary" className="text-[10px] h-4 gap-1">
-                      <Check className="h-2.5 w-2.5" /> Respondida
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="text-[10px] h-4 text-muted-foreground">Aguardando resposta</Badge>
-                  )}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className="text-xs text-muted-foreground">{formatDate(s.created_at)}</span>
+                    {s.anonima && <Badge variant="outline" className="text-[10px] h-4">Anônima</Badge>}
+                    {s.resposta ? (
+                      <Badge variant="secondary" className="text-[10px] h-4 gap-1">
+                        <Check className="h-2.5 w-2.5" /> Respondida
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] h-4 text-muted-foreground">Aguardando resposta</Badge>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost" size="icon"
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => handleDelete(s.id)}
+                    aria-label="Excluir sugestão"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
                 <p className="text-sm text-foreground whitespace-pre-wrap">{s.texto}</p>
                 {s.resposta && (

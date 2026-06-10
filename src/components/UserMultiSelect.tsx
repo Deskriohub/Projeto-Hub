@@ -3,7 +3,6 @@ import { Check, ChevronsUpDown, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface UserOption {
   id: string;
@@ -48,27 +47,25 @@ export function UserMultiSelect({
         <div className="p-2 border-b">
           <Input placeholder="Buscar pessoa..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-8" />
         </div>
-        <ScrollArea className="max-h-60">
-          <div className="p-1">
-            {filtered.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-3">Ninguém encontrado.</p>
-            ) : (
-              filtered.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => toggle(u.id)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent text-left text-sm"
-                >
-                  <span className={`h-4 w-4 border rounded flex items-center justify-center shrink-0 ${selected.includes(u.id) ? "bg-primary border-primary" : "border-input"}`}>
-                    {selected.includes(u.id) && <Check className="h-3 w-3 text-primary-foreground" />}
-                  </span>
-                  <span className="truncate">{u.full_name || "—"}</span>
-                </button>
-              ))
-            )}
-          </div>
-        </ScrollArea>
+        <div className="max-h-56 overflow-y-auto p-1">
+          {filtered.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-3">Ninguém encontrado.</p>
+          ) : (
+            filtered.map((u) => (
+              <button
+                key={u.id}
+                type="button"
+                onClick={() => toggle(u.id)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent text-left text-sm"
+              >
+                <span className={`h-4 w-4 border rounded flex items-center justify-center shrink-0 ${selected.includes(u.id) ? "bg-primary border-primary" : "border-input"}`}>
+                  {selected.includes(u.id) && <Check className="h-3 w-3 text-primary-foreground" />}
+                </span>
+                <span className="truncate">{u.full_name || "—"}</span>
+              </button>
+            ))
+          )}
+        </div>
         {selected.length > 0 && (
           <div className="p-2 border-t">
             <Button variant="ghost" size="sm" className="h-7 text-xs w-full" onClick={() => onChange([])}>

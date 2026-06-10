@@ -14,6 +14,7 @@ interface Notice {
   data_inicio: string | null;
   data_fim: string | null;
   destinatarios: string[] | null;
+  created_by: string | null;
 }
 
 function todayStr(): string {
@@ -32,7 +33,7 @@ export function NoticeBoard() {
     if (!user) return;
     supabase
       .from("avisos")
-      .select("id, titulo, link, observacao, data_inicio, data_fim, destinatarios")
+      .select("id, titulo, link, observacao, data_inicio, data_fim, destinatarios, created_by")
       .eq("ativo", true)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
@@ -41,8 +42,9 @@ export function NoticeBoard() {
         const visiveis = all.filter((n) => {
           // janela de datas
           const naJanela = (!n.data_inicio || n.data_inicio <= hoje) && (!n.data_fim || n.data_fim >= hoje);
-          // direcionamento: sem destinatários = todos; com destinatários = só quem está na lista
-          const paraMim = !n.destinatarios || n.destinatarios.length === 0 || n.destinatarios.includes(user.id);
+          // direcionamento: sem destinatários = todos; com destinatários = só quem está na lista (ou quem criou)
+          const paraMim = !n.destinatarios || n.destinatarios.length === 0
+            || n.destinatarios.includes(user.id) || n.created_by === user.id;
           return naJanela && paraMim;
         });
         setNotices(visiveis);

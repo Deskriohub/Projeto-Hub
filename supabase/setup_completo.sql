@@ -49,6 +49,10 @@ ALTER TABLE public.sugestoes ADD COLUMN IF NOT EXISTS respondido_em timestamptz;
 DROP POLICY IF EXISTS "Users read own sugestoes" ON public.sugestoes;
 CREATE POLICY "Users read own sugestoes" ON public.sugestoes FOR SELECT TO authenticated
   USING (auth.uid() = autor_id);
+-- usuário comum apaga as próprias sugestões; admin apaga qualquer uma
+DROP POLICY IF EXISTS "Users delete own sugestoes" ON public.sugestoes;
+CREATE POLICY "Users delete own sugestoes" ON public.sugestoes FOR DELETE TO authenticated
+  USING (auth.uid() = autor_id OR public.has_role(auth.uid(), 'admin'));
 
 -- ---------- FEEDBACKS ----------
 CREATE TABLE IF NOT EXISTS public.feedbacks (

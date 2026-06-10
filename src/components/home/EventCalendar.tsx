@@ -174,7 +174,7 @@ export function EventCalendar() {
     } else if (avData) {
       const comData = (avData as any[]).filter(
         (a) => a.data_inicio && a.data_inicio >= startOfMonth && a.data_inicio <= endOfMonth
-          && (!a.destinatarios || a.destinatarios.length === 0 || a.destinatarios.includes(user.id))
+          && (!a.destinatarios || a.destinatarios.length === 0 || a.destinatarios.includes(user.id) || a.created_by === user.id)
       );
       setAvisos(comData.map((a) => ({
         id: a.id,
