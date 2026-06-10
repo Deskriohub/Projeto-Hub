@@ -1,6 +1,6 @@
 import {
   Home, BarChart3, Bot, Users, Smile,
-  CalendarRange, Lightbulb, Settings, ChevronDown, Megaphone, type LucideIcon
+  CalendarRange, Lightbulb, Settings, ChevronDown, Megaphone, MessageCircle, type LucideIcon
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import deskrioLogo from "@/assets/deskrio-logo.png";
@@ -186,6 +186,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {renderSimpleItem({ title: "Mural de Elogios", url: "/mural-elogios", icon: Smile })}
+              {renderSimpleItem({ title: "Feedbacks", url: "/feedbacks", icon: MessageCircle })}
               {renderSubMenu("One-on-One", CalendarRange, oneOnOneSubItems, "One-on-One")}
             </SidebarMenu>
           </SidebarGroupContent>

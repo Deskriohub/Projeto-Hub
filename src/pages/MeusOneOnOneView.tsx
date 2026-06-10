@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft, Users, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import OneOnOneComentarios from "@/components/OneOnOneComentarios";
+import { FeedbackDialog, FeedbackRecord } from "@/components/FeedbackDialog";
 
 type Responsavel = "" | "Líder" | "Liderado";
 
@@ -53,10 +54,12 @@ const MeusOneOnOneView = () => {
 
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [liderado, setLiderado] = useState<string>("");
+  const [gestorId, setGestorId] = useState<string>("");
   const [data, setData] = useState<string>("");
   const [anotacoes, setAnotacoes] = useState<string>("");
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -69,7 +72,7 @@ const MeusOneOnOneView = () => {
 
       const { data: rec, error } = await supabase
         .from("one_on_one")
-        .select("liderado_id, data_reuniao, anotacoes")
+        .select("liderado_id, gestor_id, data_reuniao, anotacoes")
         .eq("id", id)
         .maybeSingle();
       if (error || !rec) {
@@ -78,6 +81,7 @@ const MeusOneOnOneView = () => {
         return;
       }
       setLiderado(rec.liderado_id);
+      setGestorId(rec.gestor_id);
       setData(rec.data_reuniao);
       setAnotacoes(rec.anotacoes || "");
 
@@ -131,7 +135,7 @@ const MeusOneOnOneView = () => {
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between gap-3">
+      <div className="mb-6 flex items-start justify-between gap-3 flex-wrap">
         <div>
           <Button variant="ghost" onClick={() => navigate("/meus-one-on-one")} className="mb-4 -ml-2">
             <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
@@ -140,6 +144,11 @@ const MeusOneOnOneView = () => {
             <Users className="h-6 w-6 text-primary" /> Visualizar One-on-One
           </h1>
         </div>
+        {!loading && gestorId && (
+          <Button variant="outline" onClick={() => setFeedbackOpen(true)}>
+            <MessageCircle className="h-4 w-4 mr-1" /> Feedback Pós-1:1
+          </Button>
+        )}
       </div>
 
       {loading ? (
@@ -226,6 +235,21 @@ const MeusOneOnOneView = () => {
         <div className="mt-6">
           <OneOnOneComentarios oneOnOneId={id} canComment={true} />
         </div>
+      )}
+
+      {user && gestorId && (
+        <FeedbackDialog
+          open={feedbackOpen}
+          onClose={() => setFeedbackOpen(false)}
+          profiles={profiles}
+          preFilledParaId={user.id === gestorId ? liderado : gestorId}
+          preFilledParaNome={
+            profiles.find((p) =>
+              p.id === (user.id === gestorId ? liderado : gestorId)
+            )?.full_name ?? undefined
+          }
+          preFilledOneOnOneId={id}
+        />
       )}
     </div>
   );

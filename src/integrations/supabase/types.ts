@@ -47,6 +47,42 @@ export type Database = {
         }
         Relationships: []
       }
+      feedbacks: {
+        Row: {
+          id: string
+          one_on_one_id: string | null
+          de_user_id: string
+          de_user_nome: string
+          para_user_id: string
+          para_user_nome: string
+          tipo: string
+          conteudo: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          one_on_one_id?: string | null
+          de_user_id: string
+          de_user_nome: string
+          para_user_id: string
+          para_user_nome: string
+          tipo?: string
+          conteudo: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          one_on_one_id?: string | null
+          de_user_id?: string
+          de_user_nome?: string
+          para_user_id?: string
+          para_user_nome?: string
+          tipo?: string
+          conteudo?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       eventos: {
         Row: {
           id: string

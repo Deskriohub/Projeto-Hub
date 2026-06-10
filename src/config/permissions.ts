@@ -24,6 +24,7 @@ export const ROUTE_PERMISSIONS: Record<string, AppRole> = {
   "/mural-elogios": "geral",
   "/sugestoes": "admin",
   "/avisos": "geral",
+  "/feedbacks": "geral",
   "/configuracoes": "admin",
 };
 
@@ -38,6 +39,7 @@ export const NAV_PERMISSIONS: Record<string, AppRole> = {
   "/mural-elogios": "geral",
   "/sugestoes": "admin",
   "/avisos": "geral",
+  "/feedbacks": "geral",
   "/configuracoes": "admin",
 };
 
