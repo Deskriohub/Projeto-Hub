@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings, Eye, EyeOff, KeyRound, Bot, Camera, ShieldCheck, RefreshCw, BookOpen, ChevronRight } from "lucide-react";
+import { Settings, Eye, EyeOff, KeyRound, Camera, ShieldCheck, RefreshCw, BookOpen, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -182,9 +181,6 @@ export default function Configuracoes() {
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const [iaContexto, setIaContexto] = useState("");
-  const [savingIA, setSavingIA] = useState(false);
-  const savedContextRef = useRef("");
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState<string | null>(avatarUrl);
@@ -192,14 +188,6 @@ export default function Configuracoes() {
 
   useEffect(() => { setCurrentAvatar(avatarUrl); }, [avatarUrl]);
 
-  useEffect(() => {
-    if (role !== "admin") return;
-    supabase.from("configuracoes").select("valor").eq("id", "ia_contexto").maybeSingle()
-      .then(({ data }) => {
-        setIaContexto(data?.valor ?? "");
-        savedContextRef.current = data?.valor ?? "";
-      });
-  }, [role]);
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -243,23 +231,6 @@ export default function Configuracoes() {
       });
       setCurrentAvatar(publicUrl);
       toast({ title: "Foto atualizada" });
-    }
-  };
-
-  const handleSaveIA = async () => {
-    setSavingIA(true);
-    const { error } = await supabase.from("configuracoes")
-      .upsert({ id: "ia_contexto", valor: iaContexto, updated_at: new Date().toISOString() });
-    setSavingIA(false);
-    if (error) {
-      toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
-    } else {
-      if (user) logAudit(user.id, fullName, "Atualizou o contexto da IA", "Configurações", {
-        antes: savedContextRef.current || "(vazio)",
-        depois: iaContexto || "(vazio)",
-      });
-      savedContextRef.current = iaContexto;
-      toast({ title: "Contexto da IA salvo" });
     }
   };
 
@@ -370,31 +341,6 @@ export default function Configuracoes() {
           </form>
         </CardContent>
       </Card>
-
-      {role === "admin" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Bot className="h-4 w-4 text-primary" /> Contexto da IA
-            </CardTitle>
-            <CardDescription>
-              Informações extras que a IA deve conhecer — processos internos, políticas, FAQ.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <Textarea
-              placeholder="Ex: Nossa política de férias é... O processo de onboarding funciona assim..."
-              value={iaContexto}
-              onChange={(e) => setIaContexto(e.target.value)}
-              rows={6}
-              className="resize-none"
-            />
-            <Button onClick={handleSaveIA} disabled={savingIA} className="self-start">
-              {savingIA ? "Salvando..." : "Salvar contexto"}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
 
       {role === "admin" && (
         <Card

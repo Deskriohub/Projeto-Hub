@@ -65,6 +65,8 @@ export function useUpcomingItems() {
     if (!avRes.error && avRes.data) {
       for (const a of avRes.data as any[]) {
         if (!a.data_inicio || a.data_inicio < today || a.data_inicio > endStr) continue;
+        // respeita direcionamento por pessoas
+        if (a.destinatarios && a.destinatarios.length > 0 && !a.destinatarios.includes(user.id)) continue;
         result.push({
           id: `av-${a.id}`,
           tipo: "aviso",

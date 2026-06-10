@@ -338,14 +338,12 @@ const ADMIN_SECTIONS: Section[] = [
         ],
       },
       {
-        subtitle: "Contexto da IA — Admin",
+        subtitle: "Base de Conhecimento da IA — Admin",
         steps: [
-          "O 'Contexto da IA' é um texto que você escreve para ensinar o Deskinho sobre a empresa.",
-          "Use para informar: políticas internas, processos, perguntas frequentes de clientes, missão e valores.",
-          "Exemplo: 'Nossa empresa oferece serviços de atendimento ao cliente. O horário de funcionamento é das 8h às 18h...'",
-          "1. Na seção 'Contexto da IA', escreva as informações no campo de texto.",
-          "2. Clique em 'Salvar contexto'.",
-          "3. O Deskinho passará a usar esse conteúdo em todas as respostas.",
+          "Em Configurações há o acesso à Base de Conhecimento da IA.",
+          "Envie materiais da empresa (PDF, Word, PowerPoint ou texto) com processos, FAQs e procedimentos.",
+          "O sistema extrai o conteúdo automaticamente e o Deskinho passa a usar nas respostas.",
+          "Quanto mais materiais você subir, mais o Deskinho sabe responder sobre a DeskRio.",
         ],
       },
       {
@@ -353,9 +351,9 @@ const ADMIN_SECTIONS: Section[] = [
         steps: [
           "A seção Auditoria registra as últimas 100 ações realizadas na plataforma.",
           "Mostra: data/hora, usuário, módulo e descrição da ação.",
-          "Ações registradas incluem: dar feedbacks, responder sugestões, criar eventos, alterar senhas, fazer upload de foto, etc.",
+          "Clique em qualquer registro para ver o histórico de Antes e Depois da mudança.",
+          "Ações registradas incluem: feedbacks, respostas a sugestões, eventos, avisos, fotos, perfis, etc.",
           "Não registra ações no banco de dados — apenas ações feitas pelos usuários na interface.",
-          "Clique em 'Atualizar' para carregar as ações mais recentes.",
         ],
       },
     ],

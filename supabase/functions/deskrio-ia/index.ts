@@ -113,19 +113,6 @@ async function getKnowledgeBase(supabase: ReturnType<typeof createClient>): Prom
   }
 }
 
-async function getAdminContext(supabase: ReturnType<typeof createClient>): Promise<string> {
-  try {
-    const { data } = await supabase
-      .from("configuracoes")
-      .select("valor")
-      .eq("id", "ia_contexto")
-      .maybeSingle();
-    return data?.valor?.trim() ?? "";
-  } catch {
-    return "";
-  }
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -164,7 +151,6 @@ Deno.serve(async (req) => {
     const websiteContent = await getWebsiteContent(supabase);
     const manualContent = await getPlatformManual(supabase);
     const knowledgeBase = await getKnowledgeBase(supabase);
-    const adminContext = await getAdminContext(supabase);
 
     let systemPrompt = `Você é o Deskinho, assistente virtual inteligente da DeskRio.
 
@@ -180,9 +166,6 @@ Seja direto, claro e acolhedor — use linguagem simples e tom calmo e explicati
 Para perguntas sobre a plataforma, use o Manual da Plataforma como referência principal.
 Para outros assuntos, use seu conhecimento geral.`;
 
-    if (adminContext) {
-      systemPrompt += `\n\n## Informações sobre a empresa\n${adminContext}`;
-    }
     if (knowledgeBase) {
       systemPrompt += `\n\n## Materiais e procedimentos da DeskRio (base de conhecimento)\nUse este conteúdo como fonte principal para dúvidas sobre processos, atendimento e operação da DeskRio.\n${knowledgeBase}`;
     }

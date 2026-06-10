@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
-import { Megaphone, Trash2, Plus, ExternalLink } from "lucide-react";
+import { Megaphone, Trash2, Plus, ExternalLink, Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -18,19 +15,26 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { logAudit } from "@/lib/auditLog";
+import { notificar } from "@/lib/notify";
+import { UserMultiSelect, UserOption } from "@/components/UserMultiSelect";
 
 interface Aviso {
   id: string;
   titulo: string;
   link: string | null;
   observacao: string | null;
-  publico: string;
   data_inicio: string | null;
   data_fim: string | null;
+  destinatarios: string[] | null;
   created_at: string;
 }
 
-const emptyForm = () => ({ titulo: "", link: "", observacao: "", publico: "todos" as "todos" | "admin", data_inicio: "", data_fim: "" });
+const emptyForm = () => ({
+  titulo: "", link: "", observacao: "",
+  data_inicio: "", data_fim: "",
+  destino: "todos" as "todos" | "pessoas",
+  destinatarios: [] as string[],
+});
 
 function fmtDate(d: string) {
   return new Date(d + "T12:00:00").toLocaleDateString("pt-BR");
@@ -42,17 +46,24 @@ export default function AvisosAdmin() {
   const { fullName } = useProfile();
   const isAdmin = role === "admin";
   const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [profiles, setProfiles] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
 
+  const nomePorId = (id: string) => profiles.find((p) => p.id === id)?.full_name || "—";
+
   const fetchAvisos = async () => {
-    const { data, error } = await supabase
-      .from("avisos")
-      .select("id, titulo, link, observacao, publico, data_inicio, data_fim, created_at")
-      .order("created_at", { ascending: false });
+    const [{ data, error }, { data: profData }] = await Promise.all([
+      supabase
+        .from("avisos")
+        .select("id, titulo, link, observacao, data_inicio, data_fim, destinatarios, created_at")
+        .order("created_at", { ascending: false }),
+      supabase.from("profiles").select("id, full_name").order("full_name"),
+    ]);
     if (!error) setAvisos((data as Aviso[]) ?? []);
+    setProfiles((profData as UserOption[]) ?? []);
     setLoading(false);
   };
 
@@ -60,15 +71,21 @@ export default function AvisosAdmin() {
 
   const handleAdd = async () => {
     if (!form.titulo.trim()) return;
+    if (form.destino === "pessoas" && form.destinatarios.length === 0) {
+      toast({ title: "Selecione as pessoas", description: "Escolha quem vai receber, ou marque 'Todos'.", variant: "destructive" });
+      return;
+    }
     setSaving(true);
 
+    const destinatarios = form.destino === "pessoas" ? form.destinatarios : null;
     const payload = {
       titulo: form.titulo.trim(),
       link: form.link.trim() || null,
       observacao: form.observacao.trim() || null,
-      publico: form.publico,
+      publico: "todos",
       data_inicio: form.data_inicio || null,
       data_fim: form.data_fim || null,
+      destinatarios,
       created_by: user?.id ?? null,
     };
 
@@ -79,12 +96,22 @@ export default function AvisosAdmin() {
       return;
     }
 
+    // Notifica os destinatários (ou todos, se for geral)
+    const idsParaNotificar = destinatarios ?? profiles.map((p) => p.id).filter((id) => id !== user?.id);
+    notificar(idsParaNotificar, {
+      titulo: `📢 Novo aviso: ${form.titulo.trim()}`,
+      descricao: form.observacao.trim() || "Confira o mural de avisos.",
+      tipo: "aviso",
+      link: "/",
+    });
+
     if (user) {
+      const destinoTxt = destinatarios ? `${destinatarios.length} pessoa(s) específica(s)` : "Todos";
       const janela = form.data_inicio || form.data_fim
         ? `\nVisível: ${form.data_inicio ? fmtDate(form.data_inicio) : "..."}${form.data_fim ? ` até ${fmtDate(form.data_fim)}` : " (sem fim)"}`
         : "";
       logAudit(user.id, fullName, `Publicou o aviso "${form.titulo.trim()}"`, "Avisos", {
-        depois: `Título: ${form.titulo.trim()}${form.observacao ? `\nObservação: ${form.observacao.trim()}` : ""}\nVisível para: ${form.publico === "admin" ? "Só admins" : "Todos"}${janela}`,
+        depois: `Título: ${form.titulo.trim()}${form.observacao ? `\nObservação: ${form.observacao.trim()}` : ""}\nEnviado para: ${destinoTxt}${janela}`,
       });
     }
 
@@ -142,10 +169,12 @@ export default function AvisosAdmin() {
                   <div className="flex flex-col gap-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium">{a.titulo}</p>
-                      {a.publico && (
-                        <Badge variant={a.publico === "admin" ? "destructive" : "secondary"} className="text-[10px] h-4">
-                          {a.publico === "admin" ? "Só admins" : "Todos"}
+                      {a.destinatarios && a.destinatarios.length > 0 ? (
+                        <Badge variant="secondary" className="text-[10px] h-4 gap-1">
+                          <Users className="h-2.5 w-2.5" /> {a.destinatarios.length} pessoa(s)
                         </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] h-4">Todos</Badge>
                       )}
                       {(a.data_inicio || a.data_fim) && (
                         <Badge variant="outline" className="text-[10px] h-4 border-amber-300 text-amber-700">
@@ -154,6 +183,11 @@ export default function AvisosAdmin() {
                       )}
                     </div>
                     {a.observacao && <p className="text-xs text-muted-foreground">{a.observacao}</p>}
+                    {a.destinatarios && a.destinatarios.length > 0 && (
+                      <p className="text-[10px] text-muted-foreground/70">
+                        Para: {a.destinatarios.map(nomePorId).join(", ")}
+                      </p>
+                    )}
                     {a.link && (
                       <a href={a.link} target="_blank" rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
@@ -189,7 +223,6 @@ export default function AvisosAdmin() {
                 placeholder="Ex: Reunião geral na sexta às 15h"
                 value={form.titulo}
                 onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))}
-                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
               />
             </div>
             <div className="flex flex-col gap-1.5">
@@ -234,20 +267,34 @@ export default function AvisosAdmin() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground -mt-1">
-              Com data de início, o aviso aparece no calendário e só fica visível a partir dela.
-              Com data de fim, ele some automaticamente depois. Sem datas, fica sempre visível.
+              Com início, o aviso aparece no calendário e só fica visível a partir dele.
+              Com fim, ele some automaticamente. Sem datas, fica sempre visível.
             </p>
-            <div className="flex flex-col gap-1.5">
-              <Label>Visível para</Label>
-              <Select value={form.publico} onValueChange={(v) => setForm((f) => ({ ...f, publico: v as "todos" | "admin" }))}>
-                <SelectTrigger className="w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os usuários</SelectItem>
-                  <SelectItem value="admin">Somente admins</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col gap-2">
+              <Label>Enviar para</Label>
+              <div className="inline-flex rounded-md border border-border bg-background p-0.5 text-xs w-fit">
+                <button type="button" onClick={() => setForm((f) => ({ ...f, destino: "todos" }))}
+                  className={`px-3 py-1.5 rounded-sm font-medium transition-colors ${form.destino === "todos" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                  Todos
+                </button>
+                <button type="button" onClick={() => setForm((f) => ({ ...f, destino: "pessoas" }))}
+                  className={`px-3 py-1.5 rounded-sm font-medium transition-colors ${form.destino === "pessoas" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                  Pessoas específicas
+                </button>
+              </div>
+              {form.destino === "pessoas" && (
+                <>
+                  <UserMultiSelect
+                    users={profiles}
+                    selected={form.destinatarios}
+                    onChange={(ids) => setForm((f) => ({ ...f, destinatarios: ids }))}
+                    placeholder="Escolher quem vai receber..."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Só essas pessoas veem o aviso no mural e no calendário. Ótimo para separar times (N1, N2, admins).
+                  </p>
+                </>
+              )}
             </div>
           </div>
           <DialogFooter className="gap-2">

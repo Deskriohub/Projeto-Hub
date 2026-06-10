@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { logAudit } from "@/lib/auditLog";
+import { notificar } from "@/lib/notify";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ interface Sugestao {
   created_at: string;
   texto: string;
   anonima: boolean;
+  autor_id: string | null;
   autor_nome: string | null;
   resposta: string | null;
   respondido_em: string | null;
@@ -44,7 +46,7 @@ const Sugestoes = () => {
     (async () => {
       const { data, error } = await supabase
         .from("sugestoes")
-        .select("id, created_at, texto, anonima, autor_nome, resposta, respondido_em")
+        .select("id, created_at, texto, anonima, autor_id, autor_nome, resposta, respondido_em")
         .order("created_at", { ascending: false });
       if (error) { toast.error("Erro ao carregar sugestões."); }
       else { setItems((data as Sugestao[]) || []); }
@@ -74,6 +76,15 @@ const Sugestoes = () => {
       antes: selected.resposta || "(sem resposta)",
       depois: resposta.trim() || "(resposta removida)",
     });
+    // Notifica o autor (se não for anônima e houver resposta)
+    if (!selected.anonima && selected.autor_id && resposta.trim()) {
+      notificar([selected.autor_id], {
+        titulo: "Sua sugestão foi respondida",
+        descricao: resposta.trim(),
+        tipo: "sugestao",
+        link: "/minhas-sugestoes",
+      });
+    }
     toast.success("Resposta salva.");
     setItems((prev) => prev.map((s) =>
       s.id === selected.id

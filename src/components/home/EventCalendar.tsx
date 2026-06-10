@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { logAudit } from "@/lib/auditLog";
+import { notificar } from "@/lib/notify";
+import { UserMultiSelect, UserOption } from "@/components/UserMultiSelect";
 import { toast } from "@/hooks/use-toast";
 
 interface Evento {
@@ -28,6 +30,7 @@ interface Evento {
   hora_fim: string | null;
   dia_todo: boolean;
   visibilidade: string;
+  participantes: string[] | null;
   criado_por: string | null;
   criador_nome?: string;
 }
@@ -83,6 +86,7 @@ const emptyForm = () => ({
   hora_fim: "",
   dia_todo: true,
   visibilidade: "todos" as "todos" | "privado",
+  participantes: [] as string[],
 });
 
 export function EventCalendar() {
@@ -92,6 +96,7 @@ export function EventCalendar() {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [reunioes, setReunioes] = useState<ReuniaoItem[]>([]);
   const [avisos, setAvisos] = useState<AvisoItem[]>([]);
+  const [profiles, setProfiles] = useState<UserOption[]>([]);
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -134,6 +139,7 @@ export function EventCalendar() {
       setEventos((evData as any[]).map((e) => ({
         ...e,
         visibilidade: e.visibilidade ?? "todos",
+        participantes: e.participantes ?? null,
         criador_nome: e.criado_por ? (nameMap[e.criado_por] || "") : "",
       })));
     }
@@ -168,6 +174,7 @@ export function EventCalendar() {
     } else if (avData) {
       const comData = (avData as any[]).filter(
         (a) => a.data_inicio && a.data_inicio >= startOfMonth && a.data_inicio <= endOfMonth
+          && (!a.destinatarios || a.destinatarios.length === 0 || a.destinatarios.includes(user.id))
       );
       setAvisos(comData.map((a) => ({
         id: a.id,
@@ -179,6 +186,11 @@ export function EventCalendar() {
   }, [year, month, user?.id]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => {
+    supabase.from("profiles").select("id, full_name").order("full_name")
+      .then(({ data }) => setProfiles((data as UserOption[]) ?? []));
+  }, []);
 
   const today = new Date();
   const firstDay = new Date(year, month, 1);
@@ -228,6 +240,7 @@ export function EventCalendar() {
       hora_fim: e.hora_fim || "",
       dia_todo: e.dia_todo,
       visibilidade: (e.visibilidade as "todos" | "privado") || "todos",
+      participantes: e.participantes ?? [],
     });
     setDialogOpen(true);
   };
@@ -247,6 +260,7 @@ export function EventCalendar() {
       hora_fim: form.dia_todo ? null : (form.hora_fim || null),
       dia_todo: form.dia_todo,
       visibilidade: form.visibilidade,
+      participantes: form.participantes.length > 0 ? form.participantes : null,
       criado_por: user?.id ?? null,
     };
 
@@ -261,6 +275,15 @@ export function EventCalendar() {
           antes: resumo(editingEvento),
           depois: resumo({ ...form }),
         });
+        // Notifica participantes novos (que não estavam antes)
+        const antesIds = editingEvento.participantes ?? [];
+        const novos = form.participantes.filter((id) => !antesIds.includes(id) && id !== user?.id);
+        notificar(novos, {
+          titulo: `Você foi marcado em um evento`,
+          descricao: `${form.titulo} — ${form.data_inicio}`,
+          tipo: "evento",
+          link: "/",
+        });
         toast({ title: "Evento atualizado" });
       }
     } else {
@@ -269,6 +292,12 @@ export function EventCalendar() {
       else {
         if (user) logAudit(user.id, fullName, `Criou o evento "${form.titulo}"`, "Calendário", {
           depois: resumo({ ...form }),
+        });
+        notificar(form.participantes.filter((id) => id !== user?.id), {
+          titulo: `Você foi marcado em um evento`,
+          descricao: `${form.titulo} — ${form.data_inicio}`,
+          tipo: "evento",
+          link: "/",
         });
         toast({ title: "Evento criado" });
       }
@@ -527,6 +556,22 @@ export function EventCalendar() {
                   <SelectItem value="privado">🔒 Só para mim (lembrete pessoal)</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Marcar pessoas (avisar e mostrar no calendário delas)</Label>
+              <div className="mt-1">
+                <UserMultiSelect
+                  users={profiles}
+                  selected={form.participantes}
+                  onChange={(ids) => setForm((f) => ({ ...f, participantes: ids }))}
+                  placeholder="Marcar participantes..."
+                />
+              </div>
+              {form.participantes.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  As pessoas marcadas recebem uma notificação e veem o evento no calendário delas.
+                </p>
+              )}
             </div>
           </div>
           <DialogFooter className="gap-2 flex-wrap">

@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { logAudit } from "@/lib/auditLog";
+import { notificar } from "@/lib/notify";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -92,6 +93,12 @@ export function FeedbackDialog({
 
     logAudit(user.id, deNome, `Enviou feedback ${tipo} para ${paraNome}`, "Feedbacks", {
       depois: `Tipo: ${tipo}\nPara: ${paraNome}\nConteúdo: ${conteudo.trim()}`,
+    });
+    notificar([paraId], {
+      titulo: `Você recebeu um feedback ${tipo}`,
+      descricao: `De ${deNome}: ${conteudo.trim()}`,
+      tipo: "feedback",
+      link: "/feedbacks",
     });
     toast.success("Feedback enviado!");
     onClose(data as FeedbackRecord);

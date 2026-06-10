@@ -50,6 +50,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notificacoes: {
+        Row: {
+          id: string
+          user_id: string
+          titulo: string
+          descricao: string | null
+          tipo: string
+          link: string | null
+          lida: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          titulo: string
+          descricao?: string | null
+          tipo?: string
+          link?: string | null
+          lida?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          titulo?: string
+          descricao?: string | null
+          tipo?: string
+          link?: string | null
+          lida?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
       ia_documentos: {
         Row: {
           id: string
@@ -89,6 +122,7 @@ export type Database = {
           publico: string
           data_inicio: string | null
           data_fim: string | null
+          destinatarios: string[] | null
           ativo: boolean
           created_at: string
           created_by: string | null
@@ -101,6 +135,7 @@ export type Database = {
           publico?: string
           data_inicio?: string | null
           data_fim?: string | null
+          destinatarios?: string[] | null
           ativo?: boolean
           created_at?: string
           created_by?: string | null
@@ -113,6 +148,7 @@ export type Database = {
           publico?: string
           data_inicio?: string | null
           data_fim?: string | null
+          destinatarios?: string[] | null
           ativo?: boolean
           created_at?: string
           created_by?: string | null
@@ -166,6 +202,7 @@ export type Database = {
           hora_fim: string | null
           dia_todo: boolean
           visibilidade: string
+          participantes: string[] | null
           criado_por: string | null
           created_at: string
         }
@@ -179,6 +216,7 @@ export type Database = {
           hora_fim?: string | null
           dia_todo?: boolean
           visibilidade?: string
+          participantes?: string[] | null
           criado_por?: string | null
           created_at?: string
         }
@@ -192,6 +230,7 @@ export type Database = {
           hora_fim?: string | null
           dia_todo?: boolean
           visibilidade?: string
+          participantes?: string[] | null
           criado_por?: string | null
           created_at?: string
         }

@@ -17,6 +17,7 @@ import MeusOneOnOneView from "./pages/MeusOneOnOneView.tsx";
 import Elogios from "./pages/Elogios.tsx";
 import MuralElogios from "./pages/MuralElogios.tsx";
 import Sugestoes from "./pages/Sugestoes.tsx";
+import MinhasSugestoes from "./pages/MinhasSugestoes.tsx";
 import Feedbacks from "./pages/Feedbacks.tsx";
 import Ajuda from "./pages/Ajuda.tsx";
 import BaseConhecimento from "./pages/BaseConhecimento.tsx";
@@ -56,6 +57,7 @@ const App = () => (
                     <Route path="/elogios" element={<Elogios />} />
                     <Route path="/mural-elogios" element={<MuralElogios />} />
                     <Route path="/sugestoes" element={<Sugestoes />} />
+                    <Route path="/minhas-sugestoes" element={<MinhasSugestoes />} />
                     <Route path="/feedbacks" element={<Feedbacks />} />
                     <Route path="/ajuda" element={<Ajuda />} />
                     <Route path="/base-conhecimento" element={<BaseConhecimento />} />

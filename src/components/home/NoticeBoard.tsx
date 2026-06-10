@@ -5,15 +5,16 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ExternalLink, Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Notice {
   id: string;
   titulo: string;
   link: string | null;
   observacao: string | null;
-  publico: string;
   data_inicio: string | null;
   data_fim: string | null;
+  destinatarios: string[] | null;
 }
 
 function todayStr(): string {
@@ -23,29 +24,33 @@ function todayStr(): string {
 }
 
 export function NoticeBoard() {
-  const { role } = useUserRole();
-  const isAdmin = role === "admin";
+  useUserRole();
+  const { user } = useAuth();
   const [notices, setNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Notice | null>(null);
 
   useEffect(() => {
+    if (!user) return;
     supabase
       .from("avisos")
-      .select("id, titulo, link, observacao, publico, data_inicio, data_fim")
+      .select("id, titulo, link, observacao, data_inicio, data_fim, destinatarios")
       .eq("ativo", true)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         const hoje = todayStr();
         const all = (data as Notice[]) ?? [];
-        // Janela de visibilidade: dentro de [data_inicio, data_fim] (nulos = aberto)
-        const naJanela = all.filter(
-          (n) => (!n.data_inicio || n.data_inicio <= hoje) && (!n.data_fim || n.data_fim >= hoje)
-        );
-        setNotices(isAdmin ? naJanela : naJanela.filter((n) => n.publico === "todos"));
+        const visiveis = all.filter((n) => {
+          // janela de datas
+          const naJanela = (!n.data_inicio || n.data_inicio <= hoje) && (!n.data_fim || n.data_fim >= hoje);
+          // direcionamento: sem destinatários = todos; com destinatários = só quem está na lista
+          const paraMim = !n.destinatarios || n.destinatarios.length === 0 || n.destinatarios.includes(user.id);
+          return naJanela && paraMim;
+        });
+        setNotices(visiveis);
         setLoading(false);
       });
-  }, [isAdmin]);
+  }, [user]);
 
   if (loading) return <Card className="animate-pulse h-32" />;
 
