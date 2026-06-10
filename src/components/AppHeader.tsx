@@ -17,7 +17,7 @@ const ROLE_LABELS: Record<string, string> = { admin: "Admin", gestor: "Gestor", 
 export function AppHeader() {
   const { signOut } = useAuth();
   const { role } = useUserRole();
-  const { fullName, initials } = useProfile();
+  const { fullName, initials, avatarUrl } = useProfile();
   const [isDark, setIsDark] = useState(
     () => typeof document !== "undefined" && document.documentElement.classList.contains("dark"),
   );
@@ -40,6 +40,7 @@ export function AppHeader() {
               <Badge variant="secondary" className="text-xs">{ROLE_LABELS[role] || role}</Badge>
             </div>
             <Avatar className="h-8 w-8">
+              <AvatarImage src={avatarUrl ?? ""} alt={fullName} />
               <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">{initials}</AvatarFallback>
             </Avatar>
           </button>

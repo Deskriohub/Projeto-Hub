@@ -56,8 +56,7 @@ const Usuarios = () => {
   const updateRole = async (userId: string, newRole: AppRole) => {
     const { error } = await supabase
       .from("user_roles")
-      .update({ role: newRole })
-      .eq("user_id", userId);
+      .upsert({ user_id: userId, role: newRole }, { onConflict: "user_id" });
 
     if (error) {
       toast({ title: "Erro ao atualizar perfil", description: error.message, variant: "destructive" });

@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 interface Profile {
   full_name: string | null;
+  avatar_url: string | null;
 }
 
 export function useProfile() {
@@ -14,13 +15,12 @@ export function useProfile() {
     if (!user) { setProfile(null); return; }
     supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, avatar_url")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => setProfile(data ?? null));
   }, [user]);
 
-  // Fallback: metadata → e-mail (nunca deve aparecer após seed correto)
   const fullName =
     profile?.full_name ||
     user?.user_metadata?.full_name ||
@@ -37,5 +37,7 @@ export function useProfile() {
     .join("")
     .toUpperCase();
 
-  return { fullName, firstName, initials };
+  const avatarUrl = profile?.avatar_url ?? null;
+
+  return { fullName, firstName, initials, avatarUrl };
 }

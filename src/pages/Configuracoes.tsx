@@ -1,22 +1,25 @@
-import { useState, useEffect } from "react";
-import { Settings, Eye, EyeOff, KeyRound, Bot } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Settings, Eye, EyeOff, KeyRound, Bot, Camera } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
-const ROLE_LABELS: Record<string, string> = { admin: "Admin", gestor: "Gestor", geral: "Geral" };
+const ROLE_LABELS: Record<string, string> = { admin: "Admin", gestor: "Admin", geral: "Usuário" };
 const MIN_PASSWORD = 6;
 
 export default function Configuracoes() {
   const { user } = useAuth();
   const { role } = useUserRole();
+  const { fullName, initials, avatarUrl } = useProfile();
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -26,11 +29,58 @@ export default function Configuracoes() {
   const [iaContexto, setIaContexto] = useState("");
   const [savingIA, setSavingIA] = useState(false);
 
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [currentAvatar, setCurrentAvatar] = useState<string | null>(avatarUrl);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setCurrentAvatar(avatarUrl); }, [avatarUrl]);
+
   useEffect(() => {
     if (role !== "admin") return;
     supabase.from("configuracoes").select("valor").eq("id", "ia_contexto").maybeSingle()
       .then(({ data }) => setIaContexto(data?.valor ?? ""));
   }, [role]);
+
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: "Use uma imagem menor que 2MB.", variant: "destructive" });
+      return;
+    }
+
+    setUploadingPhoto(true);
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: "Erro ao enviar foto", description: uploadError.message, variant: "destructive" });
+      setUploadingPhoto(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+    const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: publicUrl })
+      .eq("id", user.id);
+
+    setUploadingPhoto(false);
+
+    if (profileError) {
+      toast({ title: "Erro ao salvar foto", description: profileError.message, variant: "destructive" });
+    } else {
+      setCurrentAvatar(publicUrl);
+      toast({ title: "Foto atualizada" });
+    }
+  };
 
   const handleSaveIA = async () => {
     setSavingIA(true);
@@ -72,6 +122,37 @@ export default function Configuracoes() {
         <Settings className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold">Configurações</h1>
       </div>
+
+      {/* Foto de perfil */}
+      <Card>
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Camera className="h-4 w-4 text-primary" /> Foto de perfil</CardTitle></CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-5">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={currentAvatar ?? ""} alt={fullName} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-xl font-semibold">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col gap-2">
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={uploadingPhoto}
+                onClick={() => photoInputRef.current?.click()}
+              >
+                {uploadingPhoto ? "Enviando..." : "Alterar foto"}
+              </Button>
+              <p className="text-xs text-muted-foreground">JPG, PNG ou WebP — máx. 2MB</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle className="text-base">Informações da conta</CardTitle></CardHeader>
