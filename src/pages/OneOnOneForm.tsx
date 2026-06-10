@@ -44,6 +44,7 @@ import { toast } from "@/hooks/use-toast";
 import { notificar } from "@/lib/notify";
 import { logAudit } from "@/lib/auditLog";
 import { useProfile } from "@/hooks/useProfile";
+import { useTeamProfiles } from "@/hooks/useTeamProfiles";
 import { gerarDatasMensais } from "@/lib/recorrencia";
 import OneOnOneComentarios from "@/components/OneOnOneComentarios";
 
@@ -100,7 +101,7 @@ const OneOnOneForm = () => {
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id && id !== "novo";
 
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const { profiles } = useTeamProfiles();
   const [liderado, setLiderado] = useState<string>("");
   const [data, setData] = useState<string>(todayStr());
   const [hora, setHora] = useState<string>("");
@@ -122,15 +123,6 @@ const OneOnOneForm = () => {
   useEffect(() => {
     const load = async () => {
       if (!user) return;
-      const { data: allProfiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, email")
-        .neq("id", user.id);
-      const sorted = (allProfiles || []).sort((a, b) =>
-        (a.full_name || "").localeCompare(b.full_name || "")
-      );
-      setProfiles(sorted as Profile[]);
-
       if (isEdit && id) {
         setLoading(true);
         const { data: rec, error } = await supabase

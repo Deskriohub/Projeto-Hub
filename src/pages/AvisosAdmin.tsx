@@ -17,6 +17,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { logAudit } from "@/lib/auditLog";
 import { notificar } from "@/lib/notify";
 import { UserMultiSelect, UserOption } from "@/components/UserMultiSelect";
+import { useTeamProfiles } from "@/hooks/useTeamProfiles";
 
 interface Aviso {
   id: string;
@@ -45,6 +46,7 @@ export default function AvisosAdmin() {
   const { user } = useAuth();
   const { fullName } = useProfile();
   const isAdmin = role === "admin";
+  const { profiles: teamProfiles } = useTeamProfiles();
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [profiles, setProfiles] = useState<UserOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -285,13 +287,13 @@ export default function AvisosAdmin() {
               {form.destino === "pessoas" && (
                 <>
                   <UserMultiSelect
-                    users={profiles}
+                    users={teamProfiles}
                     selected={form.destinatarios}
                     onChange={(ids) => setForm((f) => ({ ...f, destinatarios: ids }))}
                     placeholder="Escolher quem vai receber..."
                   />
                   <p className="text-xs text-muted-foreground">
-                    Só essas pessoas veem o aviso no mural e no calendário. Ótimo para separar times (N1, N2, admins).
+                    Aparecem aqui as pessoas do seu time. Só quem você marcar vê o aviso no mural e no calendário, e é notificado.
                   </p>
                 </>
               )}

@@ -20,6 +20,7 @@ Cada admin é líder de um time. Na tela de Usuários, define-se o "Gestor respo
 - Um admin não vê os 1:1 nem os logs de 1:1 de outro time.
 - O Dono da plataforma vê tudo, acima dos admins de time.
 - Assuntos gerais (avisos, eventos, elogios, fotos, etc.) continuam visíveis a todos os admins na auditoria; a restrição por time vale para One-on-One.
+- Nos seletores de pessoas (escolher liderado no 1:1, marcar pessoas em eventos, destinatários específicos de avisos), o admin só vê as pessoas do próprio time; o Dono vê todos. Aviso "Todos" e evento "Todos veem" continuam alcançando a empresa inteira.
 
 ## Home (Painel Principal)
 
@@ -84,7 +85,7 @@ Campos ao criar um evento:
    - "Todos veem (calendário geral)": aparece para todos. As pessoas marcadas ainda recebem notificação e veem o evento em destaque.
    - "Somente as pessoas marcadas": só você e as pessoas marcadas veem o evento (obrigatório marcar ao menos uma pessoa).
    - "Só para mim": lembrete pessoal, ninguém mais vê (não tem pessoas marcadas).
-6. "Marcar pessoas": define quem é avisado e, no modo "Somente as pessoas marcadas", quem pode ver o evento.
+6. "Marcar pessoas": define quem é avisado e, no modo "Somente as pessoas marcadas", quem pode ver o evento. A lista mostra apenas as pessoas do time do admin (o Dono vê todos).
 
 ### Repetir todo mês (recorrência)
 Ao criar, marcar "Repetir todo mês" e escolher por quantos meses (de 2 a 12). O sistema cria um evento por mês, na mesma data e hora. Cada ocorrência é um registro independente — dá para editar a data e a hora de um mês específico sem afetar os outros.
@@ -113,7 +114,7 @@ Mostra os 1:1 dos liderados **do time do admin** (cada admin vê apenas o própr
 
 ### Criar um One-on-One (admin)
 1. Em "Todas as reuniões", clicar em "Novo One-on-One".
-2. Escolher o liderado, a data e a hora.
+2. Escolher o liderado (a lista mostra só as pessoas do time do admin; o Dono vê todos), a data e a hora.
 3. Escrever as anotações da reunião (com formatação e emojis).
 4. Adicionar os Próximos Passos, definindo o responsável de cada um.
 5. Opcional: marcar "Repetir todo mês" para criar vários encontros mensais de uma vez.
@@ -132,7 +133,7 @@ Criar um aviso (admin):
 1. Em "Avisos", clicar em "Novo Aviso".
 2. Preencher Título, Observação e Link (os dois últimos opcionais).
 3. Início (opcional): a partir de quando o aviso aparece — e ele é marcado no calendário nessa data. Fim (opcional): quando o aviso some automaticamente. Sem datas, fica sempre visível.
-4. "Enviar para": "Todos" ou "Pessoas específicas". Com pessoas específicas, só os destinatários veem o aviso no mural e no calendário, e são notificados. Isso permite separar times (por exemplo, N1, N2, administradores).
+4. "Enviar para": "Todos" (empresa inteira) ou "Pessoas específicas". Em "Pessoas específicas", a lista mostra apenas as pessoas do time do admin (o Dono vê todos); só os destinatários veem o aviso no mural e no calendário, e são notificados.
 5. Publicar.
 
 O criador sempre vê o próprio aviso no mural. Quando um aviso atinge a data de fim, quem o criou é notificado de que ele saiu do mural.

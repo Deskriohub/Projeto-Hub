@@ -16,7 +16,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { logAudit } from "@/lib/auditLog";
 import { notificar } from "@/lib/notify";
 import { gerarDatasMensais } from "@/lib/recorrencia";
-import { UserMultiSelect, UserOption } from "@/components/UserMultiSelect";
+import { UserMultiSelect } from "@/components/UserMultiSelect";
+import { useTeamProfiles } from "@/hooks/useTeamProfiles";
 import { toast } from "@/hooks/use-toast";
 
 export interface Evento {
@@ -70,15 +71,13 @@ interface Props {
 export function EventoDialog({ open, onClose, editing, defaultDate, onSaved }: Props) {
   const { user } = useAuth();
   const { fullName } = useProfile();
-  const [profiles, setProfiles] = useState<UserOption[]>([]);
+  const { profiles } = useTeamProfiles();
   const [form, setForm] = useState(emptyForm(defaultDate));
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    supabase.from("profiles").select("id, full_name").order("full_name")
-      .then(({ data }) => setProfiles((data as UserOption[]) ?? []));
     if (editing) {
       setForm({
         titulo: editing.titulo,

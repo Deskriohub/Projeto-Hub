@@ -39,7 +39,6 @@ export function NoticeBoard() {
     supabase
       .from("avisos")
       .select("id, titulo, link, observacao, data_inicio, data_fim, destinatarios, created_by")
-      .eq("ativo", true)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         const hoje = todayStr();

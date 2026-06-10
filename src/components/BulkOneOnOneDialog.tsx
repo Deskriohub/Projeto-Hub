@@ -14,8 +14,8 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { notificar } from "@/lib/notify";
 import { gerarDatasMensais } from "@/lib/recorrencia";
+import { useTeamProfiles } from "@/hooks/useTeamProfiles";
 
-interface Profile { id: string; full_name: string | null; }
 interface Linha { liderado: string; data: string; hora: string; }
 
 function todayStr() {
@@ -32,7 +32,7 @@ export function BulkOneOnOneDialog({
   open, onClose, onCreated,
 }: { open: boolean; onClose: () => void; onCreated?: () => void; }) {
   const { user } = useAuth();
-  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const { profiles } = useTeamProfiles();
   const [linhas, setLinhas] = useState<Linha[]>([{ liderado: "", data: todayStr(), hora: "" }]);
   const [repetir, setRepetir] = useState(false);
   const [meses, setMeses] = useState(3);
@@ -40,11 +40,9 @@ export function BulkOneOnOneDialog({
 
   useEffect(() => {
     if (!open) return;
-    supabase.from("profiles").select("id, full_name").neq("id", user?.id ?? "").order("full_name")
-      .then(({ data }) => setProfiles((data as Profile[]) ?? []));
     setLinhas([{ liderado: "", data: todayStr(), hora: "" }]);
     setRepetir(false); setMeses(3);
-  }, [open, user?.id]);
+  }, [open]);
 
   const addLinha = () => setLinhas((p) => [...p, { liderado: "", data: todayStr(), hora: "" }]);
   const addTodos = () => {
