@@ -132,8 +132,8 @@ const Feedbacks = () => {
   const recebidos = feedbacks.filter((f) => f.para_user_id === user?.id);
   const enviados = feedbacks.filter((f) => f.de_user_id === user?.id);
 
-  const handleCreated = (fb?: FeedbackRecord) => {
-    if (fb) setFeedbacks((prev) => [fb, ...prev]);
+  const handleCreated = (fbs?: FeedbackRecord[]) => {
+    if (fbs && fbs.length > 0) setFeedbacks((prev) => [...fbs, ...prev]);
     setNovoOpen(false);
   };
 

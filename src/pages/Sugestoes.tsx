@@ -63,15 +63,20 @@ const Sugestoes = () => {
     if (!selected || !user) return;
     setSaving(true);
     const now = new Date().toISOString();
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("sugestoes")
       .update({
         resposta: resposta.trim() || null,
         respondido_em: resposta.trim() ? now : null,
       })
-      .eq("id", selected.id);
+      .eq("id", selected.id)
+      .select("id");
     setSaving(false);
     if (error) { toast.error("Erro ao salvar resposta."); return; }
+    if (!updated || updated.length === 0) {
+      toast.error("Não foi possível salvar (sem permissão). Rode o setup_completo.sql no Supabase.");
+      return;
+    }
     logAudit(user.id, fullName, `Respondeu sugestão de ${selected.anonima ? "Anônimo" : (selected.autor_nome || "—")}`, "Sugestões", {
       antes: selected.resposta || "(sem resposta)",
       depois: resposta.trim() || "(resposta removida)",
@@ -180,7 +185,7 @@ const Sugestoes = () => {
                   rows={3}
                   className="mt-1 resize-none"
                 />
-                <p className="text-xs text-muted-foreground mt-1">A resposta fica visível apenas aqui para a equipe admin.</p>
+                <p className="text-xs text-muted-foreground mt-1">O autor verá esta resposta em "Minhas Sugestões" e receberá uma notificação (exceto sugestões anônimas).</p>
               </div>
             </div>
           )}

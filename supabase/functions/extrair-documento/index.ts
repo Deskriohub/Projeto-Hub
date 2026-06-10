@@ -27,11 +27,16 @@ Deno.serve(async (req) => {
     }
 
     const prompt = `Estas imagens são páginas de um material/manual interno da DeskRio${nome ? ` (arquivo: ${nome})` : ""}.
-Extraia TODO o conteúdo em português do Brasil, de forma fiel e organizada:
-- Transcreva todo o texto visível (títulos, parágrafos, listas, legendas).
-- Descreva o que as telas/prints mostram e os passos a passo, incluindo para onde as setas apontam e quais campos, menus ou botões o usuário deve clicar.
-- Mantenha a ordem das páginas e a estrutura (passo 1, passo 2, etc.).
-Responda apenas com o conteúdo extraído, sem comentários seus.`;
+Sua tarefa é transcrever o conteúdo de forma COMPLETA e FIEL, em português do Brasil. NÃO resuma e NÃO omita nada.
+
+Regras:
+- Transcreva TODO o texto visível, palavra por palavra: títulos, subtítulos, parágrafos, listas, legendas, rótulos de campos, textos dentro dos prints/telas, botões e menus.
+- Para cada imagem/print, descreva exatamente o que aparece e o passo a passo: para onde as setas apontam, qual campo preencher, qual botão clicar, em que menu ou aba.
+- Preserve a ordem das páginas e a numeração dos passos (Passo 1, Passo 2...).
+- Inclua nomes de campos, opções e valores exatamente como aparecem (ex: "Setor Recorrente", "Atendente Recorrente").
+- Se houver tabelas, transcreva linha a linha.
+
+Responda apenas com o conteúdo transcrito e organizado, sem comentários ou observações suas.`;
 
     const content: unknown[] = [{ type: "text", text: prompt }];
     for (const url of images.slice(0, 8)) {
@@ -50,7 +55,7 @@ Responda apenas com o conteúdo extraído, sem comentários seus.`;
         // Mistral com visão — forte em OCR / leitura de documentos com imagem
         model: "mistralai/mistral-small-3.2-24b-instruct",
         messages: [{ role: "user", content }],
-        max_tokens: 4000,
+        max_tokens: 6000,
         temperature: 0.1,
       }),
     });

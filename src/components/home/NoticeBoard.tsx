@@ -40,11 +40,12 @@ export function NoticeBoard() {
         const hoje = todayStr();
         const all = (data as Notice[]) ?? [];
         const visiveis = all.filter((n) => {
+          // quem criou sempre vê o próprio aviso (independente de data/direcionamento)
+          if (n.created_by === user.id) return true;
           // janela de datas
           const naJanela = (!n.data_inicio || n.data_inicio <= hoje) && (!n.data_fim || n.data_fim >= hoje);
-          // direcionamento: sem destinatários = todos; com destinatários = só quem está na lista (ou quem criou)
-          const paraMim = !n.destinatarios || n.destinatarios.length === 0
-            || n.destinatarios.includes(user.id) || n.created_by === user.id;
+          // direcionamento: sem destinatários = todos; com destinatários = só quem está na lista
+          const paraMim = !n.destinatarios || n.destinatarios.length === 0 || n.destinatarios.includes(user.id);
           return naJanela && paraMim;
         });
         setNotices(visiveis);

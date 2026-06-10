@@ -62,21 +62,22 @@ export async function readTextFile(file: File): Promise<string> {
 }
 
 /** Renderiza as páginas de um PDF como imagens JPEG (data URLs) para leitura por IA de visão. */
-export async function renderPdfToImages(file: File, maxPages = 6): Promise<string[]> {
+export async function renderPdfToImages(file: File, maxPages = 8): Promise<string[]> {
   const buffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
   const total = Math.min(pdf.numPages, maxPages);
   const images: string[] = [];
   for (let i = 1; i <= total; i++) {
     const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale: 1.4 });
+    // escala maior = mais nitidez para o OCR ler textos pequenos nos prints
+    const viewport = page.getViewport({ scale: 2.0 });
     const canvas = document.createElement("canvas");
     canvas.width = Math.floor(viewport.width);
     canvas.height = Math.floor(viewport.height);
     const ctx = canvas.getContext("2d");
     if (!ctx) continue;
     await page.render({ canvasContext: ctx, viewport, canvas } as Parameters<typeof page.render>[0]).promise;
-    images.push(canvas.toDataURL("image/jpeg", 0.7));
+    images.push(canvas.toDataURL("image/jpeg", 0.8));
   }
   return images;
 }

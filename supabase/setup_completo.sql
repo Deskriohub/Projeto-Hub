@@ -53,6 +53,10 @@ CREATE POLICY "Users read own sugestoes" ON public.sugestoes FOR SELECT TO authe
 DROP POLICY IF EXISTS "Users delete own sugestoes" ON public.sugestoes;
 CREATE POLICY "Users delete own sugestoes" ON public.sugestoes FOR DELETE TO authenticated
   USING (auth.uid() = autor_id OR public.has_role(auth.uid(), 'admin'));
+-- admin responde (UPDATE) sugestões — sem isso a resposta não salva
+DROP POLICY IF EXISTS "Admins update sugestoes" ON public.sugestoes;
+CREATE POLICY "Admins update sugestoes" ON public.sugestoes FOR UPDATE TO authenticated
+  USING (public.has_role(auth.uid(), 'admin'));
 
 -- ---------- FEEDBACKS ----------
 CREATE TABLE IF NOT EXISTS public.feedbacks (

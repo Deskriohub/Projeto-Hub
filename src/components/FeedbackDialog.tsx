@@ -11,9 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { UserMultiSelect } from "@/components/UserMultiSelect";
 import { toast } from "sonner";
 
 export interface FeedbackRecord {
@@ -41,7 +39,7 @@ export const TIPO_CONFIG = {
 
 interface FeedbackDialogProps {
   open: boolean;
-  onClose: (created?: FeedbackRecord) => void;
+  onClose: (created?: FeedbackRecord[]) => void;
   profiles: Profile[];
   preFilledParaId?: string;
   preFilledParaNome?: string;
@@ -53,14 +51,14 @@ export function FeedbackDialog({
 }: FeedbackDialogProps) {
   const { user } = useAuth();
   const { fullName } = useProfile();
-  const [paraId, setParaId] = useState(preFilledParaId ?? "");
+  const [paraIds, setParaIds] = useState<string[]>(preFilledParaId ? [preFilledParaId] : []);
   const [tipo, setTipo] = useState("positivo");
   const [conteudo, setConteudo] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
-      setParaId(preFilledParaId ?? "");
+      setParaIds(preFilledParaId ? [preFilledParaId] : []);
       setTipo("positivo");
       setConteudo("");
     }
@@ -68,40 +66,43 @@ export function FeedbackDialog({
 
   const handleSave = async () => {
     if (!user) return;
-    if (!paraId) { toast.error("Selecione o destinatário."); return; }
+    if (paraIds.length === 0) { toast.error("Selecione ao menos uma pessoa."); return; }
     if (!conteudo.trim()) { toast.error("Escreva o conteúdo do feedback."); return; }
 
-    const paraNome = profiles.find((p) => p.id === paraId)?.full_name ?? preFilledParaNome ?? "—";
     const deNome = fullName || "—";
+    const texto = conteudo.trim();
+    const nomeDe = (pid: string) => profiles.find((p) => p.id === pid)?.full_name ?? preFilledParaNome ?? "—";
+
+    const rows = paraIds.map((pid) => ({
+      de_user_id: user.id,
+      de_user_nome: deNome,
+      para_user_id: pid,
+      para_user_nome: nomeDe(pid),
+      tipo,
+      conteudo: texto,
+      one_on_one_id: preFilledOneOnOneId ?? null,
+    }));
 
     setSaving(true);
-    const { data, error } = await supabase
-      .from("feedbacks")
-      .insert({
-        de_user_id: user.id,
-        de_user_nome: deNome,
-        para_user_id: paraId,
-        para_user_nome: paraNome,
-        tipo,
-        conteudo: conteudo.trim(),
-        one_on_one_id: preFilledOneOnOneId ?? null,
-      })
-      .select()
-      .single();
+    const { data, error } = await supabase.from("feedbacks").insert(rows).select();
     setSaving(false);
     if (error) { toast.error("Erro ao enviar feedback."); return; }
 
-    logAudit(user.id, deNome, `Enviou feedback ${tipo} para ${paraNome}`, "Feedbacks", {
-      depois: `Tipo: ${tipo}\nPara: ${paraNome}\nConteúdo: ${conteudo.trim()}`,
+    // Notifica cada destinatário individualmente
+    for (const pid of paraIds) {
+      notificar([pid], {
+        titulo: `Você recebeu um feedback ${tipo}`,
+        descricao: `De ${deNome}: ${texto}`,
+        tipo: "feedback",
+        link: "/feedbacks",
+      });
+    }
+    const nomes = paraIds.map(nomeDe).join(", ");
+    logAudit(user.id, deNome, `Enviou feedback ${tipo} para ${paraIds.length} pessoa(s)`, "Feedbacks", {
+      depois: `Tipo: ${tipo}\nPara: ${nomes}\nConteúdo: ${texto}`,
     });
-    notificar([paraId], {
-      titulo: `Você recebeu um feedback ${tipo}`,
-      descricao: `De ${deNome}: ${conteudo.trim()}`,
-      tipo: "feedback",
-      link: "/feedbacks",
-    });
-    toast.success("Feedback enviado!");
-    onClose(data as FeedbackRecord);
+    toast.success(paraIds.length > 1 ? `Feedback enviado para ${paraIds.length} pessoas!` : "Feedback enviado!");
+    onClose((data as FeedbackRecord[]) ?? []);
   };
 
   return (
@@ -118,16 +119,17 @@ export function FeedbackDialog({
             {preFilledParaId ? (
               <p className="mt-1 text-sm font-medium p-2 bg-muted/40 rounded-md">{preFilledParaNome}</p>
             ) : (
-              <Select value={paraId} onValueChange={setParaId}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Selecione o colaborador" />
-                </SelectTrigger>
-                <SelectContent>
-                  {profiles.filter((p) => p.id !== user?.id).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.full_name || "—"}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="mt-1">
+                <UserMultiSelect
+                  users={profiles.filter((p) => p.id !== user?.id)}
+                  selected={paraIds}
+                  onChange={setParaIds}
+                  placeholder="Selecione uma ou mais pessoas..."
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Pode marcar várias pessoas (ex: o time todo). Cada uma recebe o feedback e a notificação separadamente.
+                </p>
+              </div>
             )}
           </div>
 
