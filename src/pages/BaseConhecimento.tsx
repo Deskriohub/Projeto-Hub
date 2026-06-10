@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { logAudit } from "@/lib/auditLog";
-import { extractDocumentText } from "@/lib/pdfExtract";
+import { extractPdfText, extractDocxText, extractPptxText, readTextFile, renderPdfToImages, fileToDataUrl } from "@/lib/pdfExtract";
+import { extrairComVisao } from "@/lib/visionExtract";
 import { toast } from "@/hooks/use-toast";
 
 interface Documento {
@@ -54,9 +55,14 @@ export default function BaseConhecimento() {
     e.target.value = "";
     if (!file || !user) return;
 
-    const suportado = /\.(pdf|docx|pptx|txt|md)$/i.test(file.name);
-    if (!suportado) {
-      toast({ title: "Formato não suportado", description: "Envie PDF, DOCX, PPTX, TXT ou MD.", variant: "destructive" });
+    const name = file.name.toLowerCase();
+    const isPdf = name.endsWith(".pdf");
+    const isImg = /\.(png|jpe?g|webp)$/.test(name);
+    const isDocx = name.endsWith(".docx");
+    const isPptx = name.endsWith(".pptx");
+    const isText = /\.(txt|md)$/.test(name);
+    if (!isPdf && !isImg && !isDocx && !isPptx && !isText) {
+      toast({ title: "Formato não suportado", description: "Envie PDF, DOCX, PPTX, imagem (PNG/JPG) ou texto.", variant: "destructive" });
       return;
     }
     if (file.size > 15 * 1024 * 1024) {
@@ -66,14 +72,34 @@ export default function BaseConhecimento() {
 
     setUploading(true);
     try {
-      // 1. Extrai o texto (PDF, DOCX, PPTX ou texto)
-      setProgress("Lendo o conteúdo do arquivo...");
-      const texto = await extractDocumentText(file);
+      // 1. Extrai o texto conforme o tipo. PDF sem texto e imagens usam OCR (Pixtral).
+      let texto = "";
+      if (isImg) {
+        setProgress("Lendo a imagem com IA (OCR)...");
+        texto = await extrairComVisao([await fileToDataUrl(file)], file.name);
+      } else if (isPdf) {
+        setProgress("Lendo o conteúdo do PDF...");
+        texto = await extractPdfText(file);
+        if (texto.length < 100) {
+          // PDF baseado em imagem — renderiza as páginas e lê com OCR/visão
+          setProgress("PDF com imagens — lendo com IA (pode levar até 1 min)...");
+          const imgs = await renderPdfToImages(file, 6);
+          texto = await extrairComVisao(imgs, file.name);
+        }
+      } else if (isDocx) {
+        setProgress("Lendo o documento Word...");
+        texto = await extractDocxText(file);
+      } else if (isPptx) {
+        setProgress("Lendo a apresentação...");
+        texto = await extractPptxText(file);
+      } else {
+        texto = await readTextFile(file);
+      }
 
       if (!texto || texto.length < 20) {
         toast({
-          title: "Não consegui ler o texto",
-          description: "O arquivo pode estar vazio ou ser um PDF/imagem escaneada. Tente um arquivo com texto selecionável.",
+          title: "Não consegui ler o conteúdo",
+          description: "O arquivo pode estar vazio ou ilegível. Tente outro arquivo ou uma imagem mais nítida.",
           variant: "destructive",
         });
         setUploading(false);
@@ -168,7 +194,7 @@ export default function BaseConhecimento() {
           <input
             ref={fileRef}
             type="file"
-            accept=".pdf,.docx,.pptx,.txt,.md"
+            accept=".pdf,.docx,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp"
             className="hidden"
             onChange={handleFile}
           />
@@ -178,8 +204,8 @@ export default function BaseConhecimento() {
               : <><Upload className="h-4 w-4 mr-2" /> Enviar documento</>}
           </Button>
           <p className="text-xs text-muted-foreground mt-2">
-            PDF, Word (.docx), PowerPoint (.pptx), .txt ou .md — máx. 15MB.
-            PDFs escaneados (imagem) não são suportados.
+            PDF, Word (.docx), PowerPoint (.pptx), imagem (PNG/JPG) ou texto — máx. 15MB.
+            PDFs com imagem e prints são lidos automaticamente por OCR (IA de visão).
           </p>
         </CardContent>
       </Card>

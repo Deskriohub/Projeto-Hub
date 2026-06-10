@@ -61,6 +61,36 @@ export async function readTextFile(file: File): Promise<string> {
   return (await file.text()).trim();
 }
 
+/** Renderiza as páginas de um PDF como imagens JPEG (data URLs) para leitura por IA de visão. */
+export async function renderPdfToImages(file: File, maxPages = 6): Promise<string[]> {
+  const buffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const total = Math.min(pdf.numPages, maxPages);
+  const images: string[] = [];
+  for (let i = 1; i <= total; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 1.4 });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.floor(viewport.width);
+    canvas.height = Math.floor(viewport.height);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) continue;
+    await page.render({ canvasContext: ctx, viewport, canvas } as Parameters<typeof page.render>[0]).promise;
+    images.push(canvas.toDataURL("image/jpeg", 0.7));
+  }
+  return images;
+}
+
+/** Converte um arquivo de imagem em data URL. */
+export function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 /** Detecta o tipo do arquivo e extrai o texto com o método adequado. */
 export async function extractDocumentText(file: File): Promise<string> {
   const name = file.name.toLowerCase();
