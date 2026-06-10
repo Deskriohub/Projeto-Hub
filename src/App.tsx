@@ -18,6 +18,7 @@ import Elogios from "./pages/Elogios.tsx";
 import MuralElogios from "./pages/MuralElogios.tsx";
 import Sugestoes from "./pages/Sugestoes.tsx";
 import Feedbacks from "./pages/Feedbacks.tsx";
+import Ajuda from "./pages/Ajuda.tsx";
 import AvisosAdmin from "./pages/AvisosAdmin.tsx";
 import Configuracoes from "./pages/Configuracoes.tsx";
 import Login from "./pages/Login.tsx";
@@ -55,6 +56,7 @@ const App = () => (
                     <Route path="/mural-elogios" element={<MuralElogios />} />
                     <Route path="/sugestoes" element={<Sugestoes />} />
                     <Route path="/feedbacks" element={<Feedbacks />} />
+                    <Route path="/ajuda" element={<Ajuda />} />
                     <Route path="/avisos" element={<AvisosAdmin />} />
                     <Route path="/configuracoes" element={<Configuracoes />} />
                     <Route path="*" element={<NotFound />} />

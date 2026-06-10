@@ -21,7 +21,7 @@ function stripHtml(html: string): string {
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .slice(0, 6000);
+    .slice(0, 4000);
 }
 
 async function getWebsiteContent(supabase: ReturnType<typeof createClient>): Promise<string> {
@@ -57,6 +57,32 @@ async function getWebsiteContent(supabase: ReturnType<typeof createClient>): Pro
   return content;
 }
 
+async function getPlatformManual(supabase: ReturnType<typeof createClient>): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from("ajuda_artigos")
+      .select("titulo, categoria, conteudo")
+      .order("categoria")
+      .order("ordem");
+
+    if (!data || data.length === 0) return "";
+
+    const grouped: Record<string, typeof data> = {};
+    for (const art of data) {
+      if (!grouped[art.categoria]) grouped[art.categoria] = [];
+      grouped[art.categoria].push(art);
+    }
+
+    return Object.entries(grouped)
+      .map(([cat, arts]) =>
+        `### ${cat}\n` + arts.map((a) => `**${a.titulo}**\n${a.conteudo}`).join("\n\n")
+      )
+      .join("\n\n");
+  } catch {
+    return "";
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
 
@@ -74,22 +100,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    const websiteContent = await getWebsiteContent(supabase);
+    const [websiteContent, manualContent, ctxRow] = await Promise.all([
+      getWebsiteContent(supabase),
+      getPlatformManual(supabase),
+      supabase.from("configuracoes").select("valor").eq("id", "ia_contexto").maybeSingle()
+        .then(({ data }) => data?.valor?.trim() ?? ""),
+    ]);
 
-    const { data: ctxRow } = await supabase
-      .from("configuracoes")
-      .select("valor")
-      .eq("id", "ia_contexto")
-      .maybeSingle();
-    const adminContext = ctxRow?.valor?.trim() ?? "";
+    const systemPrompt = `Você é o Deskinho, assistente virtual inteligente da DeskRio.
 
-    const systemPrompt = `Você é a IA assistente interna da DeskRio, uma empresa de tecnologia.
-Responda sempre em português, de forma clara, objetiva e amigável.
-Use as informações abaixo como fonte principal. Se não souber a resposta, diga honestamente.
-Não invente informações que não estejam no contexto fornecido.
+Você é um assistente geral — pode responder qualquer tipo de pergunta como um assistente de inteligência artificial completo (como o ChatGPT). Isso inclui:
+- Dúvidas sobre a plataforma Central de Gestão DeskRio
+- Dúvidas gerais de trabalho, comunicação, gestão de pessoas
+- Perguntas de clientes que os funcionários precisam responder
+- Redação de textos, e-mails, mensagens
+- Qualquer outra questão que o funcionário precisar de ajuda
 
-${adminContext ? `## Contexto adicional (configurado pelo admin)\n${adminContext}\n\n` : ""}## Site DeskRio
-${websiteContent}`;
+Responda sempre em português do Brasil, de forma clara, amigável e objetiva.
+Seja direto e prático — os funcionários precisam de respostas rápidas.
+Quando a pergunta for sobre a plataforma, use o Manual da Plataforma abaixo como referência prioritária.
+Para outros assuntos, use seu conhecimento geral.
+
+${ctxRow ? `## Informações sobre a empresa (configurado pelo admin)\n${ctxRow}\n\n` : ""}${manualContent ? `## Manual da Plataforma DeskRio\n${manualContent}\n\n` : ""}${websiteContent ? `## Conteúdo do site DeskRio\n${websiteContent}` : ""}`;
 
     const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -97,7 +129,7 @@ ${websiteContent}`;
         "Authorization": `Bearer ${Deno.env.get("OPENROUTER_API_KEY_CENTRALDESK")}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://centraldeskrio.com.br",
-        "X-Title": "Central DeskRio IA",
+        "X-Title": "Central DeskRio — Deskinho",
       },
       body: JSON.stringify({
         model: "openai/gpt-4.1-mini",
@@ -107,8 +139,8 @@ ${websiteContent}`;
           { role: "user", content: message },
         ],
         stream: true,
-        max_tokens: 1024,
-        temperature: 0.4,
+        max_tokens: 1500,
+        temperature: 0.5,
       }),
     });
 

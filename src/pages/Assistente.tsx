@@ -14,7 +14,7 @@ interface Message {
 }
 
 const INITIAL: Message[] = [
-  { role: "assistant", content: "Olá! Sou a IA da DeskRio. Como posso ajudar?" },
+  { role: "assistant", content: "Olá! Sou o Deskinho, assistente virtual da DeskRio. Pode me perguntar qualquer coisa — dúvidas sobre a plataforma, perguntas de clientes, ou qualquer outro assunto. Como posso ajudar?" },
 ];
 
 const Assistente = () => {
@@ -103,8 +103,8 @@ const Assistente = () => {
     <div className="flex flex-col h-[calc(100vh-5rem)]">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Assistente IA</h1>
-          <p className="text-muted-foreground mt-1">Converse com a IA da DeskRio.</p>
+          <h1 className="text-2xl font-bold text-foreground">Deskinho</h1>
+          <p className="text-muted-foreground mt-1">Assistente virtual da DeskRio — pergunte qualquer coisa.</p>
         </div>
         <Button variant="ghost" size="sm" onClick={() => setMessages(INITIAL)} disabled={loading}>
           <Trash2 className="h-4 w-4 mr-1" /> Limpar
@@ -146,7 +146,7 @@ const Assistente = () => {
 
         <div className="border-t p-4 flex gap-2">
           <Input
-            placeholder="Pergunte algo sobre a DeskRio..."
+            placeholder="Pergunte qualquer coisa ao Deskinho..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
