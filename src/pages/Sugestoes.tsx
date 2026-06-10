@@ -70,7 +70,10 @@ const Sugestoes = () => {
       .eq("id", selected.id);
     setSaving(false);
     if (error) { toast.error("Erro ao salvar resposta."); return; }
-    logAudit(user.id, fullName, `Respondeu sugestão de ${selected.anonima ? "Anônimo" : (selected.autor_nome || "—")}`, "Sugestões");
+    logAudit(user.id, fullName, `Respondeu sugestão de ${selected.anonima ? "Anônimo" : (selected.autor_nome || "—")}`, "Sugestões", {
+      antes: selected.resposta || "(sem resposta)",
+      depois: resposta.trim() || "(resposta removida)",
+    });
     toast.success("Resposta salva.");
     setItems((prev) => prev.map((s) =>
       s.id === selected.id
@@ -86,7 +89,9 @@ const Sugestoes = () => {
     const { error } = await supabase.from("sugestoes").delete().eq("id", selected.id);
     setDeleting(false);
     if (error) { toast.error("Erro ao excluir sugestão."); return; }
-    logAudit(user.id, fullName, `Excluiu sugestão de ${selected.anonima ? "Anônimo" : (selected.autor_nome || "—")}`, "Sugestões");
+    logAudit(user.id, fullName, `Excluiu sugestão de ${selected.anonima ? "Anônimo" : (selected.autor_nome || "—")}`, "Sugestões", {
+      antes: selected.texto,
+    });
     toast.success("Sugestão excluída.");
     setItems((prev) => prev.filter((s) => s.id !== selected.id));
     setSelected(null);

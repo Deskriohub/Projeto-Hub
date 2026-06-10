@@ -79,6 +79,9 @@ const Usuarios = () => {
   }, []);
 
   const updateRole = async (userId: string, newRole: AppRole) => {
+    const alvo = users.find((u) => u.id === userId);
+    const roleAntes = alvo ? (ROLE_LABELS[alvo.role] ?? alvo.role) : "—";
+
     const { error } = await supabase
       .from("user_roles")
       .upsert({ user_id: userId, role: newRole }, { onConflict: "user_id" });
@@ -91,6 +94,12 @@ const Usuarios = () => {
     setUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
     );
+    if (user) {
+      logAudit(user.id, fullName, `Alterou o perfil de ${alvo?.full_name || alvo?.email || "usuário"}`, "Usuários", {
+        antes: `Perfil: ${roleAntes}`,
+        depois: `Perfil: ${ROLE_LABELS[newRole] ?? newRole}`,
+      });
+    }
     toast({ title: "Perfil atualizado com sucesso" });
   };
 
@@ -139,9 +148,12 @@ const Usuarios = () => {
       return;
     }
 
-    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, avatar_url: publicUrl } : u)));
     const alvo = users.find((u) => u.id === userId);
-    if (user) logAudit(user.id, fullName, `Atualizou a foto de ${alvo?.full_name || alvo?.email || "usuário"}`, "Usuários");
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, avatar_url: publicUrl } : u)));
+    if (user) logAudit(user.id, fullName, `Atualizou a foto de ${alvo?.full_name || alvo?.email || "usuário"}`, "Usuários", {
+      antes: alvo?.avatar_url ? "Tinha uma foto" : "Sem foto",
+      depois: "Nova foto enviada",
+    });
     toast({ title: "Foto atualizada" });
   };
 

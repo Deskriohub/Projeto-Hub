@@ -15,6 +15,9 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { logAudit } from "@/lib/auditLog";
 
 interface Aviso {
   id: string;
@@ -35,6 +38,8 @@ function fmtDate(d: string) {
 
 export default function AvisosAdmin() {
   const { role } = useUserRole();
+  const { user } = useAuth();
+  const { fullName } = useProfile();
   const isAdmin = role === "admin";
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +69,7 @@ export default function AvisosAdmin() {
       publico: form.publico,
       data_inicio: form.data_inicio || null,
       data_fim: form.data_fim || null,
+      created_by: user?.id ?? null,
     };
 
     const { error } = await supabase.from("avisos").insert(payload);
@@ -73,6 +79,15 @@ export default function AvisosAdmin() {
       return;
     }
 
+    if (user) {
+      const janela = form.data_inicio || form.data_fim
+        ? `\nVisível: ${form.data_inicio ? fmtDate(form.data_inicio) : "..."}${form.data_fim ? ` até ${fmtDate(form.data_fim)}` : " (sem fim)"}`
+        : "";
+      logAudit(user.id, fullName, `Publicou o aviso "${form.titulo.trim()}"`, "Avisos", {
+        depois: `Título: ${form.titulo.trim()}${form.observacao ? `\nObservação: ${form.observacao.trim()}` : ""}\nVisível para: ${form.publico === "admin" ? "Só admins" : "Todos"}${janela}`,
+      });
+    }
+
     setForm(emptyForm());
     setOpen(false);
     toast({ title: "Aviso publicado com sucesso!" });
@@ -80,11 +95,17 @@ export default function AvisosAdmin() {
   };
 
   const handleDelete = async (id: string) => {
+    const alvo = avisos.find((a) => a.id === id);
     const { error } = await supabase.from("avisos").delete().eq("id", id);
     if (error) {
       toast({ title: "Erro ao remover aviso", description: error.message, variant: "destructive" });
     } else {
       setAvisos((prev) => prev.filter((a) => a.id !== id));
+      if (user && alvo) {
+        logAudit(user.id, fullName, `Removeu o aviso "${alvo.titulo}"`, "Avisos", {
+          antes: `Título: ${alvo.titulo}${alvo.observacao ? `\nObservação: ${alvo.observacao}` : ""}`,
+        });
+      }
       toast({ title: "Aviso removido" });
     }
   };

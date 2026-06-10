@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -25,6 +26,8 @@ interface AuditEntry {
   acao: string;
   modulo: string;
   detalhes: string | null;
+  antes: string | null;
+  depois: string | null;
   created_at: string;
 }
 
@@ -35,23 +38,27 @@ function formatDateTime(iso: string) {
 }
 
 const MODULE_COLORS: Record<string, string> = {
-  "Feedbacks":   "bg-purple-100 text-purple-700",
-  "Sugestões":   "bg-yellow-100 text-yellow-700",
-  "Calendário":  "bg-blue-100 text-blue-700",
-  "Avisos":      "bg-orange-100 text-orange-700",
-  "One-on-One":  "bg-green-100 text-green-700",
-  "Perfil":      "bg-pink-100 text-pink-700",
+  "Feedbacks":              "bg-purple-100 text-purple-700",
+  "Sugestões":              "bg-yellow-100 text-yellow-700",
+  "Calendário":             "bg-blue-100 text-blue-700",
+  "Avisos":                 "bg-orange-100 text-orange-700",
+  "One-on-One":             "bg-green-100 text-green-700",
+  "Perfil":                 "bg-pink-100 text-pink-700",
+  "Usuários":               "bg-indigo-100 text-indigo-700",
+  "Configurações":          "bg-slate-100 text-slate-700",
+  "Base de Conhecimento":   "bg-teal-100 text-teal-700",
 };
 
 function AuditoriaLog() {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<AuditEntry | null>(null);
 
   const load = async () => {
     setLoading(true);
     const { data } = await supabase
       .from("auditoria")
-      .select("id, user_nome, acao, modulo, detalhes, created_at")
+      .select("id, user_nome, acao, modulo, detalhes, antes, depois, created_at")
       .order("created_at", { ascending: false })
       .limit(100);
     setEntries((data || []) as AuditEntry[]);
@@ -63,7 +70,7 @@ function AuditoriaLog() {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm text-muted-foreground">Últimas 100 ações realizadas na plataforma.</p>
+        <p className="text-sm text-muted-foreground">Últimas 100 ações na plataforma. Clique para ver detalhes.</p>
         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={load} disabled={loading}>
           <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} />
           Atualizar
@@ -78,8 +85,13 @@ function AuditoriaLog() {
           <div className="space-y-1.5">
             {entries.map((e) => {
               const modColor = MODULE_COLORS[e.modulo] ?? "bg-gray-100 text-gray-700";
+              const temHistorico = e.antes || e.depois;
               return (
-                <div key={e.id} className="flex items-start gap-3 p-2.5 rounded-md bg-muted/40 border border-border/50">
+                <button
+                  key={e.id}
+                  onClick={() => setSelected(e)}
+                  className="w-full text-left flex items-start gap-3 p-2.5 rounded-md bg-muted/40 border border-border/50 hover:bg-accent/40 transition-colors"
+                >
                   <span className="text-[10px] text-muted-foreground whitespace-nowrap mt-0.5 min-w-[110px]">
                     {formatDateTime(e.created_at)}
                   </span>
@@ -89,18 +101,72 @@ function AuditoriaLog() {
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${modColor}`}>
                         {e.modulo}
                       </span>
+                      {temHistorico && (
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
+                          ver antes/depois
+                        </span>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">{e.acao}</p>
                     {e.detalhes && (
                       <p className="text-[10px] text-muted-foreground/70 mt-0.5 italic">{e.detalhes}</p>
                     )}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
         </ScrollArea>
       )}
+
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" /> Detalhe da auditoria
+            </DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-xs text-muted-foreground block">Quem</span>
+                  <p className="font-medium">{selected.user_nome || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block">Quando</span>
+                  <p className="font-medium">{formatDateTime(selected.created_at)}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block">Módulo</span>
+                  <p className="font-medium">{selected.modulo}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground block">Ação</span>
+                  <p className="font-medium">{selected.acao}</p>
+                </div>
+              </div>
+              {selected.detalhes && (
+                <p className="text-sm text-muted-foreground italic">{selected.detalhes}</p>
+              )}
+              {(selected.antes || selected.depois) ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="rounded-md border border-red-200 bg-red-50/50 p-3">
+                    <p className="text-xs font-semibold text-red-700 mb-1.5">Antes</p>
+                    <p className="text-xs text-foreground whitespace-pre-wrap">{selected.antes || "—"}</p>
+                  </div>
+                  <div className="rounded-md border border-green-200 bg-green-50/50 p-3">
+                    <p className="text-xs font-semibold text-green-700 mb-1.5">Depois</p>
+                    <p className="text-xs text-foreground whitespace-pre-wrap">{selected.depois || "—"}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Esta ação não tem histórico de antes/depois.</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -118,6 +184,7 @@ export default function Configuracoes() {
 
   const [iaContexto, setIaContexto] = useState("");
   const [savingIA, setSavingIA] = useState(false);
+  const savedContextRef = useRef("");
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState<string | null>(avatarUrl);
@@ -128,7 +195,10 @@ export default function Configuracoes() {
   useEffect(() => {
     if (role !== "admin") return;
     supabase.from("configuracoes").select("valor").eq("id", "ia_contexto").maybeSingle()
-      .then(({ data }) => setIaContexto(data?.valor ?? ""));
+      .then(({ data }) => {
+        setIaContexto(data?.valor ?? "");
+        savedContextRef.current = data?.valor ?? "";
+      });
   }, [role]);
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -167,8 +237,11 @@ export default function Configuracoes() {
     if (profileError) {
       toast({ title: "Erro ao salvar foto", description: profileError.message, variant: "destructive" });
     } else {
+      logAudit(user.id, fullName, "Atualizou a própria foto de perfil", "Perfil", {
+        antes: currentAvatar ? "Tinha uma foto" : "Sem foto",
+        depois: "Nova foto enviada",
+      });
       setCurrentAvatar(publicUrl);
-      logAudit(user.id, fullName, "Atualizou foto de perfil", "Perfil");
       toast({ title: "Foto atualizada" });
     }
   };
@@ -181,7 +254,11 @@ export default function Configuracoes() {
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
     } else {
-      if (user) logAudit(user.id, fullName, "Atualizou contexto da IA", "Configurações");
+      if (user) logAudit(user.id, fullName, "Atualizou o contexto da IA", "Configurações", {
+        antes: savedContextRef.current || "(vazio)",
+        depois: iaContexto || "(vazio)",
+      });
+      savedContextRef.current = iaContexto;
       toast({ title: "Contexto da IA salvo" });
     }
   };

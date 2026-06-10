@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
 import { logAudit } from "@/lib/auditLog";
-import { extractPdfText, readTextFile } from "@/lib/pdfExtract";
+import { extractDocumentText } from "@/lib/pdfExtract";
 import { toast } from "@/hooks/use-toast";
 
 interface Documento {
@@ -54,11 +54,9 @@ export default function BaseConhecimento() {
     e.target.value = "";
     if (!file || !user) return;
 
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-    const isText = file.type.startsWith("text/") || /\.(txt|md)$/i.test(file.name);
-
-    if (!isPdf && !isText) {
-      toast({ title: "Formato não suportado", description: "Envie um PDF ou arquivo de texto (.txt, .md).", variant: "destructive" });
+    const suportado = /\.(pdf|docx|pptx|txt|md)$/i.test(file.name);
+    if (!suportado) {
+      toast({ title: "Formato não suportado", description: "Envie PDF, DOCX, PPTX, TXT ou MD.", variant: "destructive" });
       return;
     }
     if (file.size > 15 * 1024 * 1024) {
@@ -68,14 +66,14 @@ export default function BaseConhecimento() {
 
     setUploading(true);
     try {
-      // 1. Extrai o texto
+      // 1. Extrai o texto (PDF, DOCX, PPTX ou texto)
       setProgress("Lendo o conteúdo do arquivo...");
-      const texto = isPdf ? await extractPdfText(file) : await readTextFile(file);
+      const texto = await extractDocumentText(file);
 
       if (!texto || texto.length < 20) {
         toast({
           title: "Não consegui ler o texto",
-          description: "O arquivo pode ser um PDF escaneado (imagem). Tente um PDF com texto selecionável ou cole o conteúdo manualmente.",
+          description: "O arquivo pode estar vazio ou ser um PDF/imagem escaneada. Tente um arquivo com texto selecionável.",
           variant: "destructive",
         });
         setUploading(false);
@@ -113,7 +111,9 @@ export default function BaseConhecimento() {
         toast({ title: "Erro ao salvar", description: insErr.message, variant: "destructive" });
       } else {
         setDocs((prev) => [inserted as Documento, ...prev]);
-        logAudit(user.id, fullName, `Adicionou documento "${file.name}" à base de conhecimento`, "Base de Conhecimento");
+        logAudit(user.id, fullName, `Adicionou o documento "${file.name}" à base de conhecimento`, "Base de Conhecimento", {
+          depois: `${file.name}\n${texto.length} caracteres extraídos`,
+        });
         toast({ title: "Documento adicionado", description: "O Deskinho já pode usar esse conteúdo." });
       }
     } catch (err) {
@@ -137,7 +137,9 @@ export default function BaseConhecimento() {
       if (path) await supabase.storage.from("documentos").remove([path]);
     }
     setDocs((prev) => prev.filter((d) => d.id !== doc.id));
-    if (user) logAudit(user.id, fullName, `Removeu documento "${doc.nome}" da base de conhecimento`, "Base de Conhecimento");
+    if (user) logAudit(user.id, fullName, `Removeu o documento "${doc.nome}" da base de conhecimento`, "Base de Conhecimento", {
+      antes: `${doc.nome}\n${doc.tamanho} caracteres`,
+    });
     toast({ title: "Documento removido" });
   };
 
@@ -166,17 +168,18 @@ export default function BaseConhecimento() {
           <input
             ref={fileRef}
             type="file"
-            accept=".pdf,.txt,.md,application/pdf,text/plain"
+            accept=".pdf,.docx,.pptx,.txt,.md"
             className="hidden"
             onChange={handleFile}
           />
           <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
             {uploading
               ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {progress || "Processando..."}</>
-              : <><Upload className="h-4 w-4 mr-2" /> Enviar documento (PDF ou texto)</>}
+              : <><Upload className="h-4 w-4 mr-2" /> Enviar documento</>}
           </Button>
           <p className="text-xs text-muted-foreground mt-2">
-            PDF com texto selecionável, .txt ou .md — máx. 15MB. PDFs escaneados (imagem) não são suportados.
+            PDF, Word (.docx), PowerPoint (.pptx), .txt ou .md — máx. 15MB.
+            PDFs escaneados (imagem) não são suportados.
           </p>
         </CardContent>
       </Card>

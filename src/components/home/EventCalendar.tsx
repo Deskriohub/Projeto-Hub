@@ -250,18 +250,26 @@ export function EventCalendar() {
       criado_por: user?.id ?? null,
     };
 
+    const resumo = (ev: { titulo: string; data_inicio: string; descricao?: string | null; dia_todo?: boolean; hora_inicio?: string | null; visibilidade?: string }) =>
+      `Título: ${ev.titulo}\nData: ${ev.data_inicio}${ev.dia_todo === false && ev.hora_inicio ? `\nHora: ${ev.hora_inicio}` : ""}${ev.descricao ? `\nDescrição: ${ev.descricao}` : ""}\nVisibilidade: ${ev.visibilidade === "privado" ? "Só para mim" : "Todos"}`;
+
     if (editingEvento) {
       const { error } = await supabase.from("eventos").update(payload).eq("id", editingEvento.id);
       if (error) { toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" }); }
       else {
-        if (user) logAudit(user.id, fullName, `Atualizou evento "${form.titulo}"`, "Calendário");
+        if (user) logAudit(user.id, fullName, `Editou o evento "${form.titulo}"`, "Calendário", {
+          antes: resumo(editingEvento),
+          depois: resumo({ ...form }),
+        });
         toast({ title: "Evento atualizado" });
       }
     } else {
       const { error } = await supabase.from("eventos").insert(payload);
       if (error) { toast({ title: "Erro ao criar evento", description: error.message, variant: "destructive" }); }
       else {
-        if (user) logAudit(user.id, fullName, `Criou evento "${form.titulo}" em ${form.data_inicio}`, "Calendário");
+        if (user) logAudit(user.id, fullName, `Criou o evento "${form.titulo}"`, "Calendário", {
+          depois: resumo({ ...form }),
+        });
         toast({ title: "Evento criado" });
       }
     }
@@ -278,7 +286,9 @@ export function EventCalendar() {
     setDeleting(false);
     if (error) { toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" }); }
     else {
-      if (user) logAudit(user.id, fullName, `Excluiu evento "${editingEvento.titulo}"`, "Calendário");
+      if (user) logAudit(user.id, fullName, `Excluiu o evento "${editingEvento.titulo}"`, "Calendário", {
+        antes: `Título: ${editingEvento.titulo}\nData: ${editingEvento.data_inicio}`,
+      });
       toast({ title: "Evento excluído" });
       setDialogOpen(false);
       fetchAll();

@@ -22,6 +22,8 @@ export type Database = {
           acao: string
           modulo: string
           detalhes: string | null
+          antes: string | null
+          depois: string | null
           created_at: string
         }
         Insert: {
@@ -31,6 +33,8 @@ export type Database = {
           acao: string
           modulo: string
           detalhes?: string | null
+          antes?: string | null
+          depois?: string | null
           created_at?: string
         }
         Update: {
@@ -40,6 +44,8 @@ export type Database = {
           acao?: string
           modulo?: string
           detalhes?: string | null
+          antes?: string | null
+          depois?: string | null
           created_at?: string
         }
         Relationships: []

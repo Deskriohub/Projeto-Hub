@@ -90,7 +90,9 @@ export function FeedbackDialog({
     setSaving(false);
     if (error) { toast.error("Erro ao enviar feedback."); return; }
 
-    logAudit(user.id, deNome, `Enviou feedback ${tipo} para ${paraNome}`, "Feedbacks");
+    logAudit(user.id, deNome, `Enviou feedback ${tipo} para ${paraNome}`, "Feedbacks", {
+      depois: `Tipo: ${tipo}\nPara: ${paraNome}\nConteúdo: ${conteudo.trim()}`,
+    });
     toast.success("Feedback enviado!");
     onClose(data as FeedbackRecord);
   };

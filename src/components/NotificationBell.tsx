@@ -7,7 +7,15 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUpcomingItems, UpcomingItem } from "@/hooks/useUpcomingItems";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+
+function hojeStr(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 const TIPO_INFO = {
   evento:  { icon: CalendarClock, color: "text-blue-600",   label: "Evento" },
@@ -26,8 +34,35 @@ function formatRelative(dateStr: string, todayStr: string): string {
 
 export function NotificationBell() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { items, todayItems, todayStr } = useUpcomingItems();
   const notifiedRef = useRef(false);
+
+  // Avisa o criador quando um aviso dele chega à data de fim (saiu do mural)
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const hoje = hojeStr();
+      const { data } = await supabase
+        .from("avisos")
+        .select("id, titulo, data_fim, created_by")
+        .eq("created_by", user.id)
+        .not("data_fim", "is", null)
+        .lt("data_fim", hoje);
+      if (cancelled || !data) return;
+      for (const a of data as Array<{ id: string; titulo: string }>) {
+        const key = `aviso-expirado-${a.id}`;
+        if (localStorage.getItem(key)) continue;
+        localStorage.setItem(key, "1");
+        toast({
+          title: "📢 Seu aviso expirou",
+          description: `O aviso "${a.titulo}" chegou à data de fim e saiu do mural.`,
+        });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   // Toast na tela para itens de hoje — uma vez por dia
   useEffect(() => {
