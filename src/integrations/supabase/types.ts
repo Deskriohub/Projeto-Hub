@@ -51,6 +51,7 @@ export type Database = {
           link: string | null
           observacao: string | null
           publico: string
+          data_evento: string | null
           ativo: boolean
           created_at: string
           created_by: string | null
@@ -61,6 +62,7 @@ export type Database = {
           link?: string | null
           observacao?: string | null
           publico?: string
+          data_evento?: string | null
           ativo?: boolean
           created_at?: string
           created_by?: string | null
@@ -71,6 +73,7 @@ export type Database = {
           link?: string | null
           observacao?: string | null
           publico?: string
+          data_evento?: string | null
           ativo?: boolean
           created_at?: string
           created_by?: string | null

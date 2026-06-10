@@ -34,6 +34,13 @@ interface ReuniaoItem {
   data: string;
 }
 
+interface AvisoItem {
+  id: string;
+  titulo: string;
+  data: string;
+  link: string | null;
+}
+
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function formatMonthHeader(date: Date): string {
@@ -55,6 +62,7 @@ const EVENT_COLORS = [
 ];
 
 const REUNIAO_COLOR = "bg-indigo-100 text-indigo-800 border-indigo-200";
+const AVISO_COLOR = "bg-amber-100 text-amber-800 border-amber-200";
 
 function colorForEvent(id: string): string {
   let hash = 0;
@@ -78,6 +86,7 @@ export function EventCalendar() {
   const navigate = useNavigate();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [reunioes, setReunioes] = useState<ReuniaoItem[]>([]);
+  const [avisos, setAvisos] = useState<AvisoItem[]>([]);
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -132,6 +141,25 @@ export function EventCalendar() {
         data: r.data_reuniao,
       })));
     }
+
+    // Avisos com data definida (coluna data_evento) — tolerante caso a coluna não exista
+    const { data: avData, error: avError } = await supabase
+      .from("avisos")
+      .select("id, titulo, link, data_evento")
+      .not("data_evento", "is", null)
+      .gte("data_evento", startOfMonth)
+      .lte("data_evento", endOfMonth);
+
+    if (!avError && avData) {
+      setAvisos((avData as any[]).map((a) => ({
+        id: a.id,
+        titulo: a.titulo,
+        data: a.data_evento,
+        link: a.link ?? null,
+      })));
+    } else {
+      setAvisos([]);
+    }
   }, [year, month, user?.id]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
@@ -158,6 +186,12 @@ export function EventCalendar() {
   for (const r of reunioes) {
     if (!reunioesByDay.has(r.data)) reunioesByDay.set(r.data, []);
     reunioesByDay.get(r.data)!.push(r);
+  }
+
+  const avisosByDay = new Map<string, AvisoItem[]>();
+  for (const a of avisos) {
+    if (!avisosByDay.has(a.data)) avisosByDay.set(a.data, []);
+    avisosByDay.get(a.data)!.push(a);
   }
 
   const openNew = (dayStr: string) => {
@@ -237,6 +271,7 @@ export function EventCalendar() {
 
   const selectedDayEvts = selectedDay ? (eventsByDay.get(selectedDay) || []) : [];
   const selectedDayRe = selectedDay ? (reunioesByDay.get(selectedDay) || []) : [];
+  const selectedDayAv = selectedDay ? (avisosByDay.get(selectedDay) || []) : [];
 
   return (
     <>
@@ -267,8 +302,9 @@ export function EventCalendar() {
               const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
               const dayEvts = dayStr ? (eventsByDay.get(dayStr) || []) : [];
               const dayRe = dayStr ? (reunioesByDay.get(dayStr) || []) : [];
+              const dayAv = dayStr ? (avisosByDay.get(dayStr) || []) : [];
               const isSelected = dayStr === selectedDay;
-              const totalItems = dayEvts.length + dayRe.length;
+              const totalItems = dayEvts.length + dayRe.length + dayAv.length;
 
               return (
                 <div
@@ -314,6 +350,16 @@ export function EventCalendar() {
                           👥 {r.titulo}
                         </div>
                       ))}
+                      {dayAv.slice(0, 1).map((a) => (
+                        <div
+                          key={a.id}
+                          onClick={(ev) => { ev.stopPropagation(); setSelectedDay(dayStr); }}
+                          className={`text-[10px] leading-tight px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 ${AVISO_COLOR}`}
+                          title={a.titulo}
+                        >
+                          📢 {a.titulo}
+                        </div>
+                      ))}
                       {totalItems > 3 && (
                         <span className="text-[10px] text-muted-foreground pl-1">+{totalItems - 3}</span>
                       )}
@@ -335,10 +381,26 @@ export function EventCalendar() {
                   <Plus className="h-3 w-3 mr-1" /> Novo evento
                 </Button>
               </div>
-              {selectedDayEvts.length === 0 && selectedDayRe.length === 0 ? (
+              {selectedDayEvts.length === 0 && selectedDayRe.length === 0 && selectedDayAv.length === 0 ? (
                 <p className="text-xs text-muted-foreground">Nenhum evento. Clique em "Novo evento" para adicionar.</p>
               ) : (
                 <div className="space-y-2">
+                  {selectedDayAv.map((a) => (
+                    <div
+                      key={a.id}
+                      className={`flex items-center justify-between gap-2 p-2 rounded-md border ${AVISO_COLOR}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="shrink-0">📢</span>
+                        <p className="text-sm font-medium truncate">{a.titulo}</p>
+                      </div>
+                      {a.link && (
+                        <a href={a.link} target="_blank" rel="noopener noreferrer" className="text-[10px] underline shrink-0" onClick={(e) => e.stopPropagation()}>
+                          abrir →
+                        </a>
+                      )}
+                    </div>
+                  ))}
                   {selectedDayRe.map((r) => (
                     <div
                       key={r.id}

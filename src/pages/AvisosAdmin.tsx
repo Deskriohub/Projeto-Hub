@@ -22,10 +22,11 @@ interface Aviso {
   link: string | null;
   observacao: string | null;
   publico: string;
+  data_evento: string | null;
   created_at: string;
 }
 
-const emptyForm = () => ({ titulo: "", link: "", observacao: "", publico: "todos" as "todos" | "admin" });
+const emptyForm = () => ({ titulo: "", link: "", observacao: "", publico: "todos" as "todos" | "admin", data_evento: "" });
 
 export default function AvisosAdmin() {
   const { role } = useUserRole();
@@ -39,7 +40,7 @@ export default function AvisosAdmin() {
   const fetchAvisos = async () => {
     const { data, error } = await supabase
       .from("avisos")
-      .select("id, titulo, link, observacao, publico, created_at")
+      .select("id, titulo, link, observacao, publico, data_evento, created_at")
       .order("created_at", { ascending: false });
     if (!error) setAvisos((data as Aviso[]) ?? []);
     setLoading(false);
@@ -51,38 +52,19 @@ export default function AvisosAdmin() {
     if (!form.titulo.trim()) return;
     setSaving(true);
 
-    const payload: Record<string, unknown> = {
+    const payload = {
       titulo: form.titulo.trim(),
       link: form.link.trim() || null,
+      observacao: form.observacao.trim() || null,
+      publico: form.publico,
+      data_evento: form.data_evento || null,
     };
-
-    // Adiciona campos opcionais se existirem na tabela
-    try {
-      Object.assign(payload, {
-        observacao: form.observacao.trim() || null,
-        publico: form.publico,
-      });
-    } catch {
-      // colunas não existem ainda — ignora
-    }
 
     const { error } = await supabase.from("avisos").insert(payload);
     setSaving(false);
     if (error) {
-      // Tenta sem os campos novos caso a coluna ainda não exista no banco
-      if (error.message.includes("column") && (error.message.includes("observacao") || error.message.includes("publico"))) {
-        const { error: e2 } = await supabase.from("avisos").insert({
-          titulo: form.titulo.trim(),
-          link: form.link.trim() || null,
-        });
-        if (e2) {
-          toast({ title: "Erro ao criar aviso", description: e2.message, variant: "destructive" });
-          return;
-        }
-      } else {
-        toast({ title: "Erro ao criar aviso", description: error.message, variant: "destructive" });
-        return;
-      }
+      toast({ title: "Erro ao criar aviso", description: error.message, variant: "destructive" });
+      return;
     }
 
     setForm(emptyForm());
@@ -136,6 +118,11 @@ export default function AvisosAdmin() {
                       {a.publico && (
                         <Badge variant={a.publico === "admin" ? "destructive" : "secondary"} className="text-[10px] h-4">
                           {a.publico === "admin" ? "Só admins" : "Todos"}
+                        </Badge>
+                      )}
+                      {a.data_evento && (
+                        <Badge variant="outline" className="text-[10px] h-4 border-amber-300 text-amber-700">
+                          📅 {new Date(a.data_evento + "T12:00:00").toLocaleDateString("pt-BR")}
                         </Badge>
                       )}
                     </div>
@@ -197,6 +184,16 @@ export default function AvisosAdmin() {
                 value={form.link}
                 onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
                 type="url"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="av-data">Data (opcional — aparece no calendário)</Label>
+              <Input
+                id="av-data"
+                type="date"
+                value={form.data_evento}
+                onChange={(e) => setForm((f) => ({ ...f, data_evento: e.target.value }))}
+                className="w-48"
               />
             </div>
             <div className="flex flex-col gap-1.5">
