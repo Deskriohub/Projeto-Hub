@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Users, ChevronDown, ChevronRight, MessageSquare, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { OneOnOneTodoRow } from "@/components/OneOnOneTodoCheck";
@@ -61,6 +62,7 @@ function formatDateBR(dateStr: string): string {
 
 const MeusOneOnOne = () => {
   const { user } = useAuth();
+  const { role } = useUserRole();
   const navigate = useNavigate();
   const [records, setRecords] = useState<OneOnOneRecord[]>([]);
   const [gestorNames, setGestorNames] = useState<Record<string, string>>({});
@@ -207,7 +209,11 @@ const MeusOneOnOne = () => {
         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
           <Users className="h-6 w-6 text-primary" /> Minhas reuniões
         </h1>
-        <p className="text-muted-foreground mt-1">One-on-ones em que você participa como líder ou liderado.</p>
+        <p className="text-muted-foreground mt-1">
+          {role === "geral"
+            ? "Seus one-on-ones e os próximos passos sob sua responsabilidade."
+            : "One-on-ones em que você participa como líder ou liderado."}
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-3 mb-6">

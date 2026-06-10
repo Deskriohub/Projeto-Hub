@@ -24,7 +24,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { OneOnOneTodoRow } from "@/components/OneOnOneTodoCheck";
+import { BulkOneOnOneDialog } from "@/components/BulkOneOnOneDialog";
 import { toast } from "@/hooks/use-toast";
+import { CalendarPlus } from "lucide-react";
 
 interface TodoItem {
   id: string;
@@ -207,6 +209,27 @@ const OneOnOne = () => {
 
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+
+  const reload = () => {
+    if (!user) return;
+    supabase
+      .from("one_on_one")
+      .select("id, data_reuniao, liderado_id, liderado_nome, gestor_id, anotacoes, one_on_one_todos(id, texto, concluido, responsavel, concluido_por_nome, concluido_em)")
+      .neq("liderado_id", user.id)
+      .order("data_reuniao", { ascending: false })
+      .then(({ data }) => {
+        const mapped: OneOnOneRecord[] = (data || []).map((r: any) => ({
+          id: r.id, data_reuniao: r.data_reuniao, liderado_id: r.liderado_id,
+          liderado_nome: r.liderado_nome, gestor_id: r.gestor_id, anotacoes: r.anotacoes,
+          todos: (r.one_on_one_todos || []).map((t: any) => ({
+            id: t.id, texto: t.texto, concluido: t.concluido, responsavel: t.responsavel,
+            concluido_por_nome: t.concluido_por_nome ?? null, concluido_em: t.concluido_em ?? null,
+          })),
+        }));
+        setRecords(mapped);
+      });
+  };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -232,13 +255,20 @@ const OneOnOne = () => {
           </h1>
           <p className="text-muted-foreground mt-1">Histórico de one-on-ones com seus liderados.</p>
         </div>
-        <Button
-          onClick={() => navigate("/one-on-one/novo")}
-          className="bg-purple-600 hover:bg-purple-700 text-white"
-        >
-          <Plus className="h-4 w-4 mr-2" /> Novo One-on-One
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" onClick={() => setBulkOpen(true)}>
+            <CalendarPlus className="h-4 w-4 mr-2" /> Agendar para o time
+          </Button>
+          <Button
+            onClick={() => navigate("/one-on-one/novo")}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <Plus className="h-4 w-4 mr-2" /> Novo One-on-One
+          </Button>
+        </div>
       </div>
+
+      <BulkOneOnOneDialog open={bulkOpen} onClose={() => setBulkOpen(false)} onCreated={reload} />
 
       <div className="flex flex-wrap gap-3 mb-6">
         <div className="space-y-1">
