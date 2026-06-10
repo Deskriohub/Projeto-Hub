@@ -23,6 +23,11 @@ function todayStr(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+function fmtDiaMes(iso: string): string {
+  const [, m, d] = iso.split("-");
+  return `${d}/${m}`;
+}
+
 export function NoticeBoard() {
   const { user } = useAuth();
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -40,13 +45,12 @@ export function NoticeBoard() {
         const hoje = todayStr();
         const all = (data as Notice[]) ?? [];
         const visiveis = all.filter((n) => {
-          // quem criou sempre vê o próprio aviso (independente de data/direcionamento)
-          if (n.created_by === user.id) return true;
-          // janela de datas
-          const naJanela = (!n.data_inicio || n.data_inicio <= hoje) && (!n.data_fim || n.data_fim >= hoje);
-          // direcionamento: sem destinatários = todos; com destinatários = só quem está na lista
-          const paraMim = !n.destinatarios || n.destinatarios.length === 0 || n.destinatarios.includes(user.id);
-          return naJanela && paraMim;
+          // direcionamento: sem destinatários = todos; com destinatários = só quem está na lista (ou o criador)
+          const paraMim = n.created_by === user.id || !n.destinatarios || n.destinatarios.length === 0 || n.destinatarios.includes(user.id);
+          // some só quando passa do fim — avisos agendados (início futuro) já aparecem aqui,
+          // igual ao calendário, marcados como "a partir de" (consistência entre mural e calendário)
+          const naoExpirou = !n.data_fim || n.data_fim >= hoje;
+          return paraMim && naoExpirou;
         });
         setNotices(visiveis);
         setLoading(false);
@@ -75,7 +79,14 @@ export function NoticeBoard() {
                     className="p-3 rounded-md bg-muted/50 border border-border/50 flex items-start justify-between gap-2 cursor-pointer hover:bg-accent/40 transition-colors"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-foreground truncate">{notice.titulo}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-semibold text-foreground truncate">{notice.titulo}</p>
+                        {notice.data_inicio && notice.data_inicio > todayStr() && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium shrink-0">
+                            a partir de {fmtDiaMes(notice.data_inicio)}
+                          </span>
+                        )}
+                      </div>
                       {notice.observacao && (
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notice.observacao}</p>
                       )}

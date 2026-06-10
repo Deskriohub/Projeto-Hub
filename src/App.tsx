@@ -25,7 +25,6 @@ const Elogios = lazy(() => import("./pages/Elogios.tsx"));
 const MuralElogios = lazy(() => import("./pages/MuralElogios.tsx"));
 const Sugestoes = lazy(() => import("./pages/Sugestoes.tsx"));
 const MinhasSugestoes = lazy(() => import("./pages/MinhasSugestoes.tsx"));
-const Feedbacks = lazy(() => import("./pages/Feedbacks.tsx"));
 const Ajuda = lazy(() => import("./pages/Ajuda.tsx"));
 const Eventos = lazy(() => import("./pages/Eventos.tsx"));
 const BaseConhecimento = lazy(() => import("./pages/BaseConhecimento.tsx"));
@@ -72,7 +71,6 @@ const App = () => (
                       <Route path="/mural-elogios" element={<MuralElogios />} />
                       <Route path="/sugestoes" element={<Sugestoes />} />
                       <Route path="/minhas-sugestoes" element={<MinhasSugestoes />} />
-                      <Route path="/feedbacks" element={<Feedbacks />} />
                       <Route path="/ajuda" element={<Ajuda />} />
                       <Route path="/base-conhecimento" element={<BaseConhecimento />} />
                       <Route path="/avisos" element={<AvisosAdmin />} />

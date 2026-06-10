@@ -88,13 +88,15 @@ export function FeedbackDialog({
     setSaving(false);
     if (error) { toast.error("Erro ao enviar feedback."); return; }
 
-    // Notifica cada destinatário individualmente
+    // Notifica cada destinatário individualmente.
+    // Feedback Pós-1:1 leva direto para a reunião (onde a pessoa lê o feedback).
+    const destino = preFilledOneOnOneId ? `/meus-one-on-one/${preFilledOneOnOneId}` : "/";
     for (const pid of paraIds) {
       notificar([pid], {
         titulo: `Você recebeu um feedback ${tipo}`,
         descricao: `De ${deNome}: ${texto}`,
         tipo: "feedback",
-        link: "/feedbacks",
+        link: destino,
       });
     }
     const nomes = paraIds.map(nomeDe).join(", ");

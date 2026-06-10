@@ -4,6 +4,8 @@ interface AuditOptions {
   detalhes?: string;
   antes?: string | null;
   depois?: string | null;
+  /** Para ações de One-on-One: gestor do time, usado para restringir quem vê o log. */
+  timeGestorId?: string | null;
 }
 
 /**
@@ -29,5 +31,6 @@ export async function logAudit(
     detalhes: opts.detalhes ?? null,
     antes: opts.antes ?? null,
     depois: opts.depois ?? null,
+    time_gestor_id: opts.timeGestorId ?? null,
   });
 }

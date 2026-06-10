@@ -42,6 +42,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { notificar } from "@/lib/notify";
+import { logAudit } from "@/lib/auditLog";
+import { useProfile } from "@/hooks/useProfile";
 import { gerarDatasMensais } from "@/lib/recorrencia";
 import OneOnOneComentarios from "@/components/OneOnOneComentarios";
 
@@ -92,6 +94,7 @@ const todayStr = () => {
 const OneOnOneForm = () => {
   const { user } = useAuth();
   const { role } = useUserRole();
+  const { fullName } = useProfile();
   const isAdmin = role === "admin";
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -310,6 +313,11 @@ const OneOnOneForm = () => {
         setSaving(false);
         return;
       }
+      logAudit(user.id, fullName, `Editou o 1:1 de ${liderado_nome}`, "One-on-One", {
+        antes: `Data: ${fmtDataBR(origDataRef.current)}${origHoraRef.current ? ` ${origHoraRef.current}` : ""}`,
+        depois: `Data: ${fmtDataBR(data)}${hora ? ` ${hora}` : ""}`,
+        timeGestorId: gestorId,
+      });
       // Notifica o liderado se a data ou a hora mudou (remarcação)
       if (liderado !== user.id && (data !== origDataRef.current || hora !== origHoraRef.current)) {
         notificar([liderado], {
@@ -338,6 +346,11 @@ const OneOnOneForm = () => {
         return;
       }
       recordId = inserted.id;
+
+      logAudit(user.id, fullName, `Criou um 1:1 com ${liderado_nome}`, "One-on-One", {
+        depois: `Data: ${fmtDataBR(data)}${hora ? ` ${hora}` : ""}`,
+        timeGestorId: user.id,
+      });
 
       // Recorrência: cria as próximas reuniões mensais (vazias), mesmo dia e hora
       const datas = repetir ? gerarDatasMensais(data, meses).slice(1) : [];
@@ -402,15 +415,22 @@ const OneOnOneForm = () => {
   const canDelete = isEdit && !isLiderado && (isAdmin || (gestorId !== null && gestorId === user?.id));
 
   const handleDelete = async () => {
-    if (!id) return;
+    if (!id || !user) return;
     setDeleting(true);
     await supabase.from("one_on_one_todos").delete().eq("one_on_one_id", id);
     const { error } = await supabase.from("one_on_one").delete().eq("id", id);
-    setDeleting(false);
     if (error) {
+      setDeleting(false);
       toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
       return;
     }
+    // Remove as notificações que apontavam para este 1:1 (não podem ficar órfãs)
+    await supabase.from("notificacoes").delete().eq("link", `/meus-one-on-one/${id}`);
+    logAudit(user.id, fullName, `Excluiu o 1:1 de ${liderado_nome}`, "One-on-One", {
+      antes: `Data: ${fmtDataBR(data)}${hora ? ` ${hora}` : ""}`,
+      timeGestorId: gestorId,
+    });
+    setDeleting(false);
     toast({ title: "One-on-One excluído" });
     setConfirmDelete(false);
     navigate("/one-on-one");

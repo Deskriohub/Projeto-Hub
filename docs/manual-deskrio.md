@@ -7,10 +7,19 @@ Este documento descreve, em detalhes, todas as funcionalidades da plataforma Cen
 A Central de Gestão DeskRio é a plataforma interna da empresa para gestão de pessoas, comunicação e acompanhamento.
 
 Existem dois perfis principais:
-- **Usuário (geral)**: acesso às funcionalidades do dia a dia (Home, elogios, feedbacks, suas reuniões, avisos, eventos, sugestões, Deskinho, ajuda).
-- **Admin**: tudo do usuário, mais a área de Administração (Usuários, Sugestões, Configurações, Base de Conhecimento) e a gestão completa de One-on-One, Avisos e Relatórios.
+- **Usuário (geral)**: acesso às funcionalidades do dia a dia (Home, elogios, suas reuniões, avisos, eventos, sugestões, Deskinho, ajuda e Configurações da própria conta).
+- **Admin**: tudo do usuário, mais a área de Administração (Usuários, Sugestões) e a gestão completa de One-on-One, Avisos, Base de Conhecimento e Relatórios.
+
+Além disso, há o **Dono da plataforma** (criador): um admin especial que enxerga TUDO — todos os 1:1 e todos os registros de auditoria de todos os times — para poder dar manutenção quando necessário.
 
 O perfil de cada pessoa é definido por um admin na tela de Usuários. A área "Administração" só aparece no menu para quem é admin.
+
+### Times e permissões por gestor
+Cada admin é líder de um time. Na tela de Usuários, define-se o "Gestor responsável" de cada liderado. Com isso:
+- Um admin de time vê apenas os One-on-One do próprio time (e os registros de auditoria de 1:1 do próprio time).
+- Um admin não vê os 1:1 nem os logs de 1:1 de outro time.
+- O Dono da plataforma vê tudo, acima dos admins de time.
+- Assuntos gerais (avisos, eventos, elogios, fotos, etc.) continuam visíveis a todos os admins na auditoria; a restrição por time vale para One-on-One.
 
 ## Home (Painel Principal)
 
@@ -52,20 +61,15 @@ Para dar um elogio:
 
 Cada card mostra a foto de quem enviou e de quem recebeu. Clicar no card abre com as fotos maiores e a mensagem completa. É possível reagir a elogios de outros com emojis. Quem enviou, quem recebeu ou um admin pode excluir um elogio.
 
-## Feedbacks
+## Feedback Pós-1:1
 
-Feedbacks são mensagens privadas entre colegas — somente quem envia e quem recebe (e admins) conseguem ver. Há três tipos: Positivo (verde), Construtivo (laranja) e Negativo (vermelho).
+O feedback é sempre vinculado a uma reunião 1:1 (não existe mais um menu "Feedbacks" separado). É privado: somente quem envia e quem recebe (e admins) conseguem ver. Há três tipos: Positivo (verde), Construtivo (laranja) e Negativo (vermelho).
 
-Para dar um feedback:
-1. Acessar "Feedbacks" e clicar em "Dar Feedback".
-2. No campo "Para", selecionar uma OU várias pessoas (por exemplo, o time todo).
-3. Escolher o tipo (Positivo, Construtivo, Negativo).
-4. Escrever o conteúdo e enviar.
-
-Quando várias pessoas são selecionadas, cada uma recebe o feedback e a notificação individualmente. As abas "Recebidos" e "Enviados" mostram o histórico; admin também vê a aba "Todos".
-
-### Feedback Pós-1:1
-Após uma reunião, o participante pode abrir o 1:1 em "Minhas Reuniões" → "Visualizar one-on-one" e clicar em "Feedback Pós-1:1". O destinatário já vem preenchido com o outro participante da reunião.
+Como enviar:
+1. Abrir a reunião em "Minhas Reuniões" → "Visualizar one-on-one".
+2. Clicar em "Feedback Pós-1:1" (no topo). O destinatário já vem preenchido com o outro participante da reunião.
+3. Escolher o tipo e escrever o conteúdo.
+4. Enviar. A pessoa recebe uma notificação que leva direto à reunião, e o feedback aparece dentro dela, na seção "Feedbacks desta reunião".
 
 ## Eventos
 
@@ -76,8 +80,11 @@ Campos ao criar um evento:
 2. Data início e Data fim (a data fim é opcional, para eventos de vários dias).
 3. Hora início e Hora fim. Se deixar a hora em branco, é um evento de dia inteiro.
 4. Descrição (opcional).
-5. Visibilidade: "Mostrar no calendário" (todos veem) ou "Só para mim" (lembrete pessoal, ninguém mais vê).
-6. "Marcar pessoas": as pessoas marcadas recebem uma notificação e o evento aparece no calendário delas.
+5. Quem vê este evento (visibilidade), com três opções coerentes com o campo "Marcar pessoas":
+   - "Todos veem (calendário geral)": aparece para todos. As pessoas marcadas ainda recebem notificação e veem o evento em destaque.
+   - "Somente as pessoas marcadas": só você e as pessoas marcadas veem o evento (obrigatório marcar ao menos uma pessoa).
+   - "Só para mim": lembrete pessoal, ninguém mais vê (não tem pessoas marcadas).
+6. "Marcar pessoas": define quem é avisado e, no modo "Somente as pessoas marcadas", quem pode ver o evento.
 
 ### Repetir todo mês (recorrência)
 Ao criar, marcar "Repetir todo mês" e escolher por quantos meses (de 2 a 12). O sistema cria um evento por mês, na mesma data e hora. Cada ocorrência é um registro independente — dá para editar a data e a hora de um mês específico sem afetar os outros.
@@ -102,7 +109,7 @@ Lista os 1:1 do usuário. Cada card mostra a data, a hora e os próximos passos.
 São os combinados que saem da reunião — o que cada um vai fazer até o próximo encontro. Cada item tem um Responsável: "Líder" (gestor) ou "Liderado". Quem é o responsável marca o item como concluído depois, e fica registrado quem concluiu e quando. Podem ser preenchidos durante ou depois da reunião. Ao apenas agendar, podem ficar vazios.
 
 ### Todas as reuniões (admin/líder)
-Mostra todos os 1:1 dos liderados. Cada card é um 1:1 de um liderado; cards amarelos têm próximos passos pendentes. No topo, um cartão indica quantos liderados têm itens em aberto e, ao ser clicado, filtra só esses. Há filtros por Liderado, Mês/Ano e Pendências. "Ver próximos passos" expande os itens, mostrando o responsável e o que já foi concluído.
+Mostra os 1:1 dos liderados **do time do admin** (cada admin vê apenas o próprio time; o Dono da plataforma vê todos). Cada card é um 1:1 de um liderado; cards amarelos têm próximos passos pendentes. No topo, um cartão indica quantos liderados têm itens em aberto e, ao ser clicado, filtra só esses. Há filtros por Liderado, Mês/Ano e Pendências. "Ver próximos passos" expande os itens, mostrando o responsável e o que já foi concluído.
 
 ### Criar um One-on-One (admin)
 1. Em "Todas as reuniões", clicar em "Novo One-on-One".
@@ -111,6 +118,8 @@ Mostra todos os 1:1 dos liderados. Cada card é um 1:1 de um liderado; cards ama
 4. Adicionar os Próximos Passos, definindo o responsável de cada um.
 5. Opcional: marcar "Repetir todo mês" para criar vários encontros mensais de uma vez.
 6. Salvar. O liderado recebe notificação do agendamento e de eventuais remarcações (mudança de data/hora).
+
+Ao excluir um 1:1, as notificações que apontavam para ele são removidas automaticamente (não ficam órfãs para o liderado). Criar, editar e excluir 1:1 fica registrado na auditoria, visível para o líder daquele time e para o Dono da plataforma.
 
 ### Agendar para o time todo (admin)
 Em "Todas as reuniões", o botão "Agendar para o time" abre um quadro onde se adiciona várias pessoas, cada uma com sua data e hora. O botão "Adicionar time todo" preenche todos os colaboradores de uma vez. Há opção de repetir mensalmente. Ao confirmar, cria todos os 1:1 de uma vez e notifica cada pessoa individualmente.
@@ -134,7 +143,9 @@ Canal para enviar ideias e melhorias.
 
 O usuário acessa "Minhas Sugestões", clica em "Nova sugestão" e escreve a ideia. Pode marcar como anônima — nesse caso a sugestão não fica vinculada ao perfil (nem o autor a vê depois em Minhas Sugestões). Quando a equipe responde, o autor recebe uma notificação e a resposta aparece no card da sugestão. O usuário pode excluir as próprias sugestões.
 
-O admin acessa "Sugestões" (Administração), vê todas, responde (a resposta chega ao autor) e pode excluir.
+Ao criar uma sugestão, todos os admins recebem uma notificação ("Nova sugestão recebida") e o envio fica registrado na auditoria. Sugestões anônimas são registradas sem vincular o autor.
+
+O admin acessa "Sugestões" (Administração) — esse é o único menu de sugestões do admin (admin não tem "Minhas Sugestões") —, vê todas, responde (a resposta chega ao autor) e pode excluir.
 
 ## Deskinho (Assistente Virtual)
 
@@ -150,6 +161,7 @@ O Deskinho aprende com os materiais que o admin sobe na Base de Conhecimento. Pa
 
 Em "Usuários", o admin vê todos os cadastrados e pode:
 - Alterar o perfil de cada pessoa (Admin ou Usuário).
+- Definir o "Gestor responsável" de cada usuário (a qual líder/time a pessoa pertence). Isso controla quem vê os 1:1 e os logs de 1:1 dela. Admins aparecem como "Líder de time".
 - Subir a foto de qualquer pessoa: passar o mouse no avatar da coluna Foto e clicar (imagens até 5MB).
 
 Novos usuários se cadastram pelo login; depois o admin define o perfil.
@@ -166,9 +178,11 @@ Disponível para todos:
 - Foto de perfil: "Alterar foto" (JPG, PNG ou WebP, até 5MB).
 - Alterar senha: nova senha com no mínimo 6 caracteres.
 
+Configurações está disponível para todos os perfis (o usuário comum vê só Foto e Senha).
+
 Para admin, também:
 - Acesso à Base de Conhecimento da IA.
-- **Auditoria**: registro das últimas 100 ações realizadas na plataforma (feedbacks, respostas a sugestões, eventos, avisos, fotos, mudanças de perfil, etc.). Cada registro é clicável e mostra o histórico de Antes e Depois da mudança. A auditoria registra apenas ações feitas pelos usuários na interface, não mudanças diretas no banco de dados.
+- **Auditoria**: registro das últimas 100 ações realizadas na plataforma (feedbacks, sugestões, respostas a sugestões, eventos, avisos, fotos, mudanças de perfil, 1:1, etc.). Cada registro é clicável e mostra o histórico de Antes e Depois da mudança. Os registros de One-on-One seguem a regra de times: um admin vê só os do próprio time; o Dono da plataforma vê todos. A auditoria registra apenas ações feitas pelos usuários na interface, não mudanças diretas no banco de dados.
 
 ## Relatórios (Admin)
 

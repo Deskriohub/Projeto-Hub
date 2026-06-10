@@ -94,30 +94,22 @@ const SECTIONS: Section[] = [
   {
     id: "feedbacks",
     icon: MessageCircle,
-    title: "Feedbacks",
+    title: "Feedback Pós-1:1",
     content: [
       {
-        subtitle: "O que são",
+        subtitle: "O que é",
         steps: [
-          "Mensagens privadas entre colegas (só quem envia e quem recebe veem).",
+          "Um feedback privado vinculado a uma reunião 1:1 (só quem envia e quem recebe veem).",
           "Três tipos: Positivo (verde), Construtivo (laranja), Negativo (vermelho).",
         ],
       },
       {
-        subtitle: "Dar um feedback (uma ou várias pessoas)",
+        subtitle: "Como enviar",
         steps: [
-          "1. Acesse 'Feedbacks' e clique em 'Dar Feedback'.",
-          "2. No campo 'Para', selecione UMA ou VÁRIAS pessoas (ex: o time todo).",
-          "3. Escolha o tipo e escreva o conteúdo.",
-          "4. Envie — cada pessoa recebe o feedback e a notificação separadamente.",
-          "As abas 'Recebidos' e 'Enviados' mostram seu histórico.",
-        ],
-      },
-      {
-        subtitle: "Feedback Pós-1:1",
-        steps: [
-          "Após uma reunião, abra o 1:1 (Minhas Reuniões → Visualizar) e clique em 'Feedback Pós-1:1'.",
-          "O destinatário já vem preenchido com o outro participante.",
+          "1. Abra a reunião em 'Minhas Reuniões' → Visualizar.",
+          "2. Clique em 'Feedback Pós-1:1' (no topo).",
+          "3. O destinatário já vem preenchido com o outro participante; escolha o tipo e escreva.",
+          "4. Envie — a pessoa recebe uma notificação e o feedback aparece na própria reunião, em 'Feedbacks desta reunião'.",
         ],
       },
     ],

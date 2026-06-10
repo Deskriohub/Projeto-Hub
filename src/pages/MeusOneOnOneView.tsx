@@ -18,7 +18,13 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import OneOnOneComentarios from "@/components/OneOnOneComentarios";
-import { FeedbackDialog, FeedbackRecord } from "@/components/FeedbackDialog";
+import { FeedbackDialog, FeedbackRecord, TIPO_CONFIG } from "@/components/FeedbackDialog";
+
+function fmtDataHora(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 type Responsavel = "" | "Líder" | "Liderado";
 
@@ -60,6 +66,7 @@ const MeusOneOnOneView = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbacks, setFeedbacks] = useState<FeedbackRecord[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -98,6 +105,14 @@ const MeusOneOnOneView = () => {
         concluido_por_nome: t.concluido_por_nome ?? null,
         concluido_em: t.concluido_em ?? null,
       })));
+
+      const { data: fbs } = await supabase
+        .from("feedbacks")
+        .select("*")
+        .eq("one_on_one_id", id)
+        .order("created_at", { ascending: false });
+      setFeedbacks((fbs || []) as FeedbackRecord[]);
+
       setLoading(false);
     };
     load();
@@ -231,6 +246,31 @@ const MeusOneOnOneView = () => {
         </div>
       )}
 
+      {!loading && feedbacks.length > 0 && (
+        <div className="mt-6 rounded-xl border border-border bg-card p-6">
+          <h2 className="text-base font-semibold flex items-center gap-2 mb-3">
+            <MessageCircle className="h-4 w-4 text-primary" /> Feedbacks desta reunião
+          </h2>
+          <div className="space-y-2">
+            {feedbacks.map((fb) => {
+              const cfg = TIPO_CONFIG[fb.tipo as keyof typeof TIPO_CONFIG] ?? TIPO_CONFIG.positivo;
+              return (
+                <div key={fb.id} className="rounded-md border border-border/60 bg-muted/30 p-3">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${cfg.color}`}>{cfg.label}</span>
+                    <span className="text-xs text-muted-foreground">
+                      De <span className="font-medium text-foreground">{fb.de_user_nome}</span> para <span className="font-medium text-foreground">{fb.para_user_nome}</span>
+                    </span>
+                    <span className="text-[10px] text-muted-foreground/70 ml-auto">{fmtDataHora(fb.created_at)}</span>
+                  </div>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{fb.conteudo}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {!loading && id && (
         <div className="mt-6">
           <OneOnOneComentarios oneOnOneId={id} canComment={true} />
@@ -240,7 +280,10 @@ const MeusOneOnOneView = () => {
       {user && gestorId && (
         <FeedbackDialog
           open={feedbackOpen}
-          onClose={() => setFeedbackOpen(false)}
+          onClose={(created) => {
+            setFeedbackOpen(false);
+            if (created && created.length > 0) setFeedbacks((prev) => [...created, ...prev]);
+          }}
           profiles={profiles}
           preFilledParaId={user.id === gestorId ? liderado : gestorId}
           preFilledParaNome={

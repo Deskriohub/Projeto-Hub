@@ -24,6 +24,7 @@ interface UserProfile {
   avatar_url: string | null;
   created_at: string;
   role: AppRole;
+  gestor_id: string | null;
 }
 
 function getInitials(name: string | null): string {
@@ -49,7 +50,7 @@ const Usuarios = () => {
     setLoading(true);
     const [{ data, error }, { data: profiles }] = await Promise.all([
       supabase.rpc("get_users_with_emails"),
-      supabase.from("profiles").select("id, avatar_url"),
+      supabase.from("profiles").select("id, avatar_url, gestor_id"),
     ]);
 
     if (error) {
@@ -59,7 +60,8 @@ const Usuarios = () => {
     }
 
     const avatarMap: Record<string, string | null> = {};
-    (profiles as any[] || []).forEach((p) => { avatarMap[p.id] = p.avatar_url ?? null; });
+    const gestorMap: Record<string, string | null> = {};
+    (profiles as any[] || []).forEach((p) => { avatarMap[p.id] = p.avatar_url ?? null; gestorMap[p.id] = p.gestor_id ?? null; });
 
     const mapped: UserProfile[] = (data || []).map((p: any) => ({
       id: p.id,
@@ -68,6 +70,7 @@ const Usuarios = () => {
       avatar_url: avatarMap[p.id] ?? null,
       created_at: p.created_at,
       role: (p.role as AppRole) || "geral",
+      gestor_id: gestorMap[p.id] ?? null,
     }));
     mapped.sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
     setUsers(mapped);
@@ -101,6 +104,30 @@ const Usuarios = () => {
       });
     }
     toast({ title: "Perfil atualizado com sucesso" });
+  };
+
+  const updateGestor = async (userId: string, gestorId: string | null) => {
+    const alvo = users.find((u) => u.id === userId);
+    const nomeGestorAntes = alvo?.gestor_id ? (users.find((u) => u.id === alvo.gestor_id)?.full_name ?? "—") : "Sem gestor";
+    const nomeGestorDepois = gestorId ? (users.find((u) => u.id === gestorId)?.full_name ?? "—") : "Sem gestor";
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ gestor_id: gestorId })
+      .eq("id", userId);
+
+    if (error) {
+      toast({ title: "Erro ao definir gestor", description: error.message, variant: "destructive" });
+      return;
+    }
+    setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, gestor_id: gestorId } : u)));
+    if (user) {
+      logAudit(user.id, fullName, `Definiu o gestor de ${alvo?.full_name || alvo?.email || "usuário"}`, "Usuários", {
+        antes: `Gestor: ${nomeGestorAntes}`,
+        depois: `Gestor: ${nomeGestorDepois}`,
+      });
+    }
+    toast({ title: "Gestor atualizado" });
   };
 
   const triggerUpload = (userId: string) => {
@@ -157,6 +184,8 @@ const Usuarios = () => {
     toast({ title: "Foto atualizada" });
   };
 
+  const gestores = users.filter((u) => u.role === "admin");
+
   const filtered = users.filter((u) => {
     const q = search.toLowerCase();
     const matchesSearch =
@@ -211,19 +240,20 @@ const Usuarios = () => {
               <TableHead>Nome</TableHead>
               <TableHead>E-mail</TableHead>
               <TableHead>Perfil</TableHead>
+              <TableHead>Gestor responsável</TableHead>
               <TableHead>Criado em</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Carregando...
                 </TableCell>
               </TableRow>
             ) : filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Nenhum usuário encontrado
                 </TableCell>
               </TableRow>
@@ -285,6 +315,26 @@ const Usuarios = () => {
                           <SelectContent>
                             <SelectItem value="admin">Admin</SelectItem>
                             <SelectItem value="geral">Usuário</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {u.role === "admin" ? (
+                        <span className="text-xs text-muted-foreground italic">Líder de time</span>
+                      ) : (
+                        <Select
+                          value={u.gestor_id ?? "none"}
+                          onValueChange={(val) => updateGestor(u.id, val === "none" ? null : val)}
+                        >
+                          <SelectTrigger className="w-44">
+                            <SelectValue placeholder="Sem gestor" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Sem gestor</SelectItem>
+                            {gestores.map((g) => (
+                              <SelectItem key={g.id} value={g.id}>{g.full_name || g.email || "—"}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       )}

@@ -1,6 +1,6 @@
 import {
   Home, BarChart3, Bot, Users, Smile,
-  CalendarRange, Lightbulb, Settings, ChevronDown, Megaphone, MessageCircle, HelpCircle, CalendarPlus, type LucideIcon
+  CalendarRange, Lightbulb, Settings, ChevronDown, Megaphone, HelpCircle, CalendarPlus, type LucideIcon
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import deskrioLogo from "@/assets/deskrio-logo.png";
@@ -75,12 +75,12 @@ export function AppSidebar() {
     { title: "Eventos", url: "/eventos", icon: CalendarPlus },
     { title: "Deskinho", url: "/assistente", icon: Bot },
     { title: "Ajuda", url: "/ajuda", icon: HelpCircle },
+    { title: "Configurações", url: "/configuracoes", icon: Settings },
   ];
 
   const adminItems: SimpleNavItem[] = [
     { title: "Usuários", url: "/usuarios", icon: Users },
     { title: "Sugestões", url: "/sugestoes", icon: Lightbulb },
-    { title: "Configurações", url: "/configuracoes", icon: Settings },
   ];
 
   const visibleInicio = inicioItems.filter((i) => canSee(i.url));
@@ -190,7 +190,6 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {renderSimpleItem({ title: "Mural de Elogios", url: "/mural-elogios", icon: Smile })}
-              {renderSimpleItem({ title: "Feedbacks", url: "/feedbacks", icon: MessageCircle })}
               {/* "Minhas Sugestões" só para usuário comum — admin usa "Sugestões" para responder */}
               {role !== "admin" && renderSimpleItem({ title: "Minhas Sugestões", url: "/minhas-sugestoes", icon: Lightbulb })}
               {renderSubMenu("One-on-One", CalendarRange, oneOnOneSubItems, "One-on-One")}

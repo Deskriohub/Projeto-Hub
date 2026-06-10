@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useProfile } from "@/hooks/useProfile";
+import { logAudit } from "@/lib/auditLog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -79,6 +81,7 @@ function formatDateBR(dateStr: string): string {
 const OneOnOne = () => {
   const { user } = useAuth();
   const { role } = useUserRole();
+  const { fullName } = useProfile();
   const isAdmin = role === "admin";
   const navigate = useNavigate();
   const [records, setRecords] = useState<OneOnOneRecord[]>([]);
@@ -245,15 +248,25 @@ const OneOnOne = () => {
   };
 
   const handleDelete = async () => {
-    if (!deleteTarget) return;
+    if (!deleteTarget || !user) return;
+    const alvo = records.find((r) => r.id === deleteTarget);
     setDeleting(true);
     await supabase.from("one_on_one_todos").delete().eq("one_on_one_id", deleteTarget);
     const { error } = await supabase.from("one_on_one").delete().eq("id", deleteTarget);
-    setDeleting(false);
     if (error) {
+      setDeleting(false);
       toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
       return;
     }
+    // Remove as notificações que apontavam para este 1:1 (não podem ficar órfãs)
+    await supabase.from("notificacoes").delete().eq("link", `/meus-one-on-one/${deleteTarget}`);
+    if (alvo) {
+      logAudit(user.id, fullName, `Excluiu o 1:1 de ${alvo.liderado_nome}`, "One-on-One", {
+        antes: `Data: ${formatDateBR(alvo.data_reuniao)}`,
+        timeGestorId: alvo.gestor_id,
+      });
+    }
+    setDeleting(false);
     setRecords((prev) => prev.filter((r) => r.id !== deleteTarget));
     toast({ title: "One-on-One excluído" });
     setDeleteTarget(null);

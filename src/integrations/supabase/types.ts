@@ -24,6 +24,7 @@ export type Database = {
           detalhes: string | null
           antes: string | null
           depois: string | null
+          time_gestor_id: string | null
           created_at: string
         }
         Insert: {
@@ -35,6 +36,7 @@ export type Database = {
           detalhes?: string | null
           antes?: string | null
           depois?: string | null
+          time_gestor_id?: string | null
           created_at?: string
         }
         Update: {
@@ -46,6 +48,7 @@ export type Database = {
           detalhes?: string | null
           antes?: string | null
           depois?: string | null
+          time_gestor_id?: string | null
           created_at?: string
         }
         Relationships: []
@@ -447,6 +450,9 @@ configuracoes: {
           email: string | null
           full_name: string | null
           id: string
+          avatar_url: string | null
+          gestor_id: string | null
+          is_owner: boolean
         }
         Insert: {
           created_at?: string
@@ -454,6 +460,9 @@ configuracoes: {
           email?: string | null
           full_name?: string | null
           id: string
+          avatar_url?: string | null
+          gestor_id?: string | null
+          is_owner?: boolean
         }
         Update: {
           created_at?: string
@@ -461,6 +470,9 @@ configuracoes: {
           email?: string | null
           full_name?: string | null
           id?: string
+          avatar_url?: string | null
+          gestor_id?: string | null
+          is_owner?: boolean
         }
         Relationships: []
       }

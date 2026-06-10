@@ -47,11 +47,17 @@ const emptyForm = (date?: string) => ({
   data_fim: "",
   hora_inicio: "",
   hora_fim: "",
-  visibilidade: "todos" as "todos" | "privado",
+  visibilidade: "todos" as "todos" | "restrito" | "privado",
   participantes: [] as string[],
   repetir: false,
   meses: 3,
 });
+
+const VIS_LABEL: Record<string, string> = {
+  todos: "Todos veem",
+  restrito: "Somente as pessoas marcadas",
+  privado: "Só para mim",
+};
 
 interface Props {
   open: boolean;
@@ -81,7 +87,7 @@ export function EventoDialog({ open, onClose, editing, defaultDate, onSaved }: P
         data_fim: editing.data_fim || "",
         hora_inicio: editing.hora_inicio ? editing.hora_inicio.slice(0, 5) : "",
         hora_fim: editing.hora_fim ? editing.hora_fim.slice(0, 5) : "",
-        visibilidade: (editing.visibilidade as "todos" | "privado") || "todos",
+        visibilidade: (editing.visibilidade as "todos" | "restrito" | "privado") || "todos",
         participantes: editing.participantes ?? [],
         repetir: false,
         meses: 3,
@@ -92,10 +98,14 @@ export function EventoDialog({ open, onClose, editing, defaultDate, onSaved }: P
   }, [open, editing, defaultDate]);
 
   const resumo = (ev: { titulo: string; data_inicio: string; descricao?: string | null; hora_inicio?: string | null; visibilidade?: string }) =>
-    `Título: ${ev.titulo}\nData: ${ev.data_inicio}${ev.hora_inicio ? `\nHora: ${ev.hora_inicio}` : ""}${ev.descricao ? `\nDescrição: ${ev.descricao}` : ""}\nVisibilidade: ${ev.visibilidade === "privado" ? "Só para mim" : "Todos"}`;
+    `Título: ${ev.titulo}\nData: ${ev.data_inicio}${ev.hora_inicio ? `\nHora: ${ev.hora_inicio}` : ""}${ev.descricao ? `\nDescrição: ${ev.descricao}` : ""}\nVisibilidade: ${VIS_LABEL[ev.visibilidade ?? "todos"] ?? "Todos"}`;
 
   const handleSave = async () => {
     if (!form.titulo.trim()) { toast({ title: "Título obrigatório", variant: "destructive" }); return; }
+    if (form.visibilidade === "restrito" && form.participantes.length === 0) {
+      toast({ title: "Marque as pessoas", description: "Em 'Somente as pessoas marcadas', escolha quem vai ver o evento.", variant: "destructive" });
+      return;
+    }
     if (!user) return;
     setSaving(true);
 
@@ -109,7 +119,8 @@ export function EventoDialog({ open, onClose, editing, defaultDate, onSaved }: P
       hora_fim: form.hora_fim || null,
       dia_todo: diaTodo,
       visibilidade: form.visibilidade,
-      participantes: form.participantes.length > 0 ? form.participantes : null,
+      // "Só para mim" não tem participantes; nos outros casos, as pessoas marcadas
+      participantes: form.visibilidade === "privado" || form.participantes.length === 0 ? null : form.participantes,
       criado_por: user.id,
     };
 
@@ -204,24 +215,31 @@ export function EventoDialog({ open, onClose, editing, defaultDate, onSaved }: P
             <Textarea id="evt-desc" value={form.descricao} onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))} placeholder="Detalhes opcionais..." rows={2} className="mt-1 resize-none" />
           </div>
           <div>
-            <Label htmlFor="evt-vis">Visibilidade</Label>
-            <Select value={form.visibilidade} onValueChange={(v) => setForm((f) => ({ ...f, visibilidade: v as "todos" | "privado" }))}>
+            <Label htmlFor="evt-vis">Quem vê este evento</Label>
+            <Select value={form.visibilidade} onValueChange={(v) => setForm((f) => ({ ...f, visibilidade: v as "todos" | "restrito" | "privado" }))}>
               <SelectTrigger id="evt-vis" className="mt-1"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">📅 Mostrar no calendário (todos veem)</SelectItem>
+                <SelectItem value="todos">📅 Todos veem (calendário geral)</SelectItem>
+                <SelectItem value="restrito">👥 Somente as pessoas marcadas</SelectItem>
                 <SelectItem value="privado">🔒 Só para mim (lembrete pessoal)</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Marcar pessoas (avisar e mostrar no calendário delas)</Label>
-            <div className="mt-1">
-              <UserMultiSelect users={profiles} selected={form.participantes} onChange={(ids) => setForm((f) => ({ ...f, participantes: ids }))} placeholder="Marcar participantes..." />
+          {form.visibilidade !== "privado" && (
+            <div>
+              <Label>
+                {form.visibilidade === "restrito" ? "Pessoas que vão ver o evento *" : "Marcar pessoas (avisar e destacar)"}
+              </Label>
+              <div className="mt-1">
+                <UserMultiSelect users={profiles} selected={form.participantes} onChange={(ids) => setForm((f) => ({ ...f, participantes: ids }))} placeholder="Marcar pessoas..." />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {form.visibilidade === "restrito"
+                  ? "Só você e as pessoas marcadas verão este evento. Cada uma recebe uma notificação."
+                  : "Todos veem no calendário geral. As pessoas marcadas ainda recebem uma notificação e veem em destaque no calendário delas."}
+              </p>
             </div>
-            {form.participantes.length > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">As pessoas marcadas recebem uma notificação e veem o evento no calendário delas.</p>
-            )}
-          </div>
+          )}
           {!editing && (
             <div className="rounded-md border border-border/60 bg-muted/30 p-3">
               <div className="flex items-center gap-2 flex-wrap">

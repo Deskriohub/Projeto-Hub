@@ -26,10 +26,9 @@ export const ROUTE_PERMISSIONS: Record<string, AppRole> = {
   "/minhas-sugestoes": "geral",
   "/avisos": "geral",
   "/eventos": "geral",
-  "/feedbacks": "geral",
   "/ajuda": "geral",
   "/base-conhecimento": "admin",
-  "/configuracoes": "admin",
+  "/configuracoes": "geral",
 };
 
 export const NAV_PERMISSIONS: Record<string, AppRole> = {
@@ -45,10 +44,9 @@ export const NAV_PERMISSIONS: Record<string, AppRole> = {
   "/minhas-sugestoes": "geral",
   "/avisos": "geral",
   "/eventos": "geral",
-  "/feedbacks": "geral",
   "/ajuda": "geral",
   "/base-conhecimento": "admin",
-  "/configuracoes": "admin",
+  "/configuracoes": "geral",
 };
 
 export const REPORT_CATEGORY_PERMISSIONS: Record<string, AppRole> = {};
