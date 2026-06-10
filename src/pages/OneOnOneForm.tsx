@@ -438,12 +438,6 @@ const OneOnOneForm = () => {
               <Pencil className="h-4 w-4 mr-2" /> Editar
             </Button>
           )}
-          {!readOnly && (
-            <Button onClick={handleSave} disabled={saving} size="sm">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-              {saving ? "Salvando..." : "Salvar"}
-            </Button>
-          )}
         </div>
       </div>
 
