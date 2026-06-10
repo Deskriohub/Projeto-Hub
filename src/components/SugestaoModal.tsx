@@ -68,7 +68,8 @@ export function SugestaoModal({ open, onOpenChange }: Props) {
     const { error } = await supabase.from("sugestoes").insert({
       texto: trimmed,
       anonima,
-      autor_id: user?.id ?? null,
+      // Anônima de verdade: não vincula o autor (nem id, nem nome)
+      autor_id: anonima ? null : (user?.id ?? null),
       autor_nome: anonima ? null : userName,
     });
     setSubmitting(false);

@@ -83,7 +83,7 @@ export default function BaseConhecimento() {
 
       // 2. Sobe o arquivo original para o storage
       setProgress("Salvando o arquivo...");
-      const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
       const path = `${Date.now()}_${safeName}`;
       const { error: upErr } = await supabase.storage.from("documentos").upload(path, file, { upsert: true });
 

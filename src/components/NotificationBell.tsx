@@ -8,6 +8,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useUpcomingItems } from "@/hooks/useUpcomingItems";
 import { useNotificacoes, Notificacao } from "@/hooks/useNotificacoes";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { notificar } from "@/lib/notify";
 
 const TIPO_ICON: Record<string, { icon: React.ElementType; color: string }> = {
   sugestao: { icon: Lightbulb,     color: "text-yellow-600" },
@@ -26,16 +29,41 @@ function relativo(iso: string): string {
 
 export function NotificationBell() {
   const navigate = useNavigate();
-  const { items, naoLidas, marcarLida, marcarTodasLidas } = useNotificacoes();
+  const { user } = useAuth();
+  const { items, naoLidas, marcarLida, marcarTodasLidas, refetch } = useNotificacoes();
   const { items: compromissos, todayStr } = useUpcomingItems();
-  const notifiedRef = useRef(false);
+  const expiryRef = useRef(false);
 
-  // Toast na tela para itens de hoje — uma vez por dia (compromissos)
+  // Avisa o criador quando um aviso dele chega à data de fim (saiu do mural)
   useEffect(() => {
-    const hoje = compromissos.filter((i) => i.data === todayStr);
-    if (notifiedRef.current || hoje.length === 0) return;
-    notifiedRef.current = true;
-  }, [compromissos, todayStr]);
+    if (!user || expiryRef.current) return;
+    expiryRef.current = true;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("avisos")
+        .select("id, titulo, data_fim, created_by")
+        .eq("created_by", user.id)
+        .not("data_fim", "is", null)
+        .lt("data_fim", todayStr);
+      if (cancelled || !data || data.length === 0) return;
+      let criou = false;
+      for (const a of data as Array<{ id: string; titulo: string }>) {
+        const key = `aviso-fim-notif-${a.id}`;
+        if (localStorage.getItem(key)) continue;
+        localStorage.setItem(key, "1");
+        await notificar([user.id], {
+          titulo: "📢 Seu aviso expirou",
+          descricao: `O aviso "${a.titulo}" chegou à data de fim e saiu do mural.`,
+          tipo: "aviso",
+          link: "/avisos",
+        });
+        criou = true;
+      }
+      if (criou && !cancelled) refetch();
+    })();
+    return () => { cancelled = true; };
+  }, [user, todayStr, refetch]);
 
   const handleClick = (n: Notificacao) => {
     if (!n.lida) marcarLida(n.id);
