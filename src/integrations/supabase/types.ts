@@ -41,6 +41,36 @@ export type Database = {
         }
         Relationships: []
       }
+      destaques: {
+        Row: {
+          id: string
+          mes: string
+          criterio: string | null
+          posicao: number
+          nome: string
+          foto_url: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          mes: string
+          criterio?: string | null
+          posicao: number
+          nome: string
+          foto_url?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          mes?: string
+          criterio?: string | null
+          posicao?: number
+          nome?: string
+          foto_url?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       configuracoes: {
         Row: {
           id: string
