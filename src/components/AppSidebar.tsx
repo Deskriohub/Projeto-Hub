@@ -1,6 +1,6 @@
 import {
   Home, BarChart3, Bot, Users, Smile,
-  CalendarRange, Lightbulb, Settings, ChevronDown, Megaphone, MessageCircle, HelpCircle, type LucideIcon
+  CalendarRange, Lightbulb, Settings, ChevronDown, Megaphone, MessageCircle, HelpCircle, CalendarPlus, type LucideIcon
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import deskrioLogo from "@/assets/deskrio-logo.png";
@@ -70,6 +70,7 @@ export function AppSidebar() {
 
   const recursosTail: SimpleNavItem[] = [
     { title: "Avisos", url: "/avisos", icon: Megaphone },
+    { title: "Eventos", url: "/eventos", icon: CalendarPlus },
     { title: "Deskinho", url: "/assistente", icon: Bot },
     { title: "Ajuda", url: "/ajuda", icon: HelpCircle },
   ];

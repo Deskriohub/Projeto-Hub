@@ -20,6 +20,7 @@ import Sugestoes from "./pages/Sugestoes.tsx";
 import MinhasSugestoes from "./pages/MinhasSugestoes.tsx";
 import Feedbacks from "./pages/Feedbacks.tsx";
 import Ajuda from "./pages/Ajuda.tsx";
+import Eventos from "./pages/Eventos.tsx";
 import BaseConhecimento from "./pages/BaseConhecimento.tsx";
 import AvisosAdmin from "./pages/AvisosAdmin.tsx";
 import Configuracoes from "./pages/Configuracoes.tsx";
@@ -62,6 +63,7 @@ const App = () => (
                     <Route path="/ajuda" element={<Ajuda />} />
                     <Route path="/base-conhecimento" element={<BaseConhecimento />} />
                     <Route path="/avisos" element={<AvisosAdmin />} />
+                    <Route path="/eventos" element={<Eventos />} />
                     <Route path="/configuracoes" element={<Configuracoes />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>

@@ -2,64 +2,19 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Users, Lock } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Users, Lock, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProfile } from "@/hooks/useProfile";
-import { logAudit } from "@/lib/auditLog";
-import { notificar } from "@/lib/notify";
-import { gerarDatasMensais } from "@/lib/recorrencia";
-import { UserMultiSelect, UserOption } from "@/components/UserMultiSelect";
-import { toast } from "@/hooks/use-toast";
+import { EventoDialog, Evento } from "@/components/EventoDialog";
 
-interface Evento {
-  id: string;
-  titulo: string;
-  descricao: string | null;
-  data_inicio: string;
-  data_fim: string | null;
-  hora_inicio: string | null;
-  hora_fim: string | null;
-  dia_todo: boolean;
-  visibilidade: string;
-  participantes: string[] | null;
-  criado_por: string | null;
-  criador_nome?: string;
-}
-
-interface ReuniaoItem {
-  id: string;
-  titulo: string;
-  data: string;
-  hora: string | null;
-}
-
-interface AvisoItem {
-  id: string;
-  titulo: string;
-  data: string;
-  link: string | null;
-}
+interface ReuniaoItem { id: string; titulo: string; data: string; hora: string | null; }
+interface AvisoItem { id: string; titulo: string; data: string; link: string | null; }
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 function formatMonthHeader(date: Date): string {
   const month = date.toLocaleDateString("pt-BR", { month: "long" });
-  const year = date.getFullYear();
-  return `${month.charAt(0).toUpperCase() + month.slice(1)}/${String(year).slice(-2)}`;
-}
-
-function toDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${month.charAt(0).toUpperCase() + month.slice(1)}/${String(date.getFullYear()).slice(-2)}`;
 }
 
 const EVENT_COLORS = [
@@ -69,7 +24,6 @@ const EVENT_COLORS = [
   "bg-orange-100 text-orange-800 border-orange-200",
   "bg-pink-100 text-pink-800 border-pink-200",
 ];
-
 const REUNIAO_COLOR = "bg-indigo-100 text-indigo-800 border-indigo-200";
 const AVISO_COLOR = "bg-amber-100 text-amber-800 border-amber-200";
 
@@ -79,35 +33,17 @@ function colorForEvent(id: string): string {
   return EVENT_COLORS[Math.abs(hash) % EVENT_COLORS.length];
 }
 
-const emptyForm = () => ({
-  titulo: "",
-  descricao: "",
-  data_inicio: toDateStr(new Date()),
-  data_fim: "",
-  hora_inicio: "",
-  hora_fim: "",
-  dia_todo: true,
-  visibilidade: "todos" as "todos" | "privado",
-  participantes: [] as string[],
-  repetir: false,
-  meses: 3,
-});
-
 export function EventCalendar() {
   const { user } = useAuth();
-  const { fullName } = useProfile();
   const navigate = useNavigate();
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [reunioes, setReunioes] = useState<ReuniaoItem[]>([]);
   const [avisos, setAvisos] = useState<AvisoItem[]>([]);
-  const [profiles, setProfiles] = useState<UserOption[]>([]);
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
-  const [form, setForm] = useState(emptyForm());
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [newDate, setNewDate] = useState<string | undefined>(undefined);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -119,26 +55,17 @@ export function EventCalendar() {
     const startOfMonth = `${year}-${pad(month + 1)}-01`;
     const endOfMonth = `${year}-${pad(month + 1)}-${pad(lastDayNum)}`;
 
-    // EVENTOS — select("*") evita erro caso alguma coluna (ex: visibilidade) não exista
     const { data: evData, error: evError } = await supabase
-      .from("eventos")
-      .select("*")
-      .gte("data_inicio", startOfMonth)
-      .lte("data_inicio", endOfMonth)
+      .from("eventos").select("*")
+      .gte("data_inicio", startOfMonth).lte("data_inicio", endOfMonth)
       .order("data_inicio", { ascending: true });
-
-    if (evError) {
-      console.error("[Calendário] erro ao buscar eventos:", evError.message);
-      setEventos([]);
-    } else if (evData) {
+    if (evError) { console.error("[Calendário] eventos:", evError.message); setEventos([]); }
+    else if (evData) {
       const userIds = Array.from(new Set((evData as any[]).map((e) => e.criado_por).filter(Boolean)));
       const nameMap: Record<string, string> = {};
       if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", userIds);
-        (profiles || []).forEach((p: any) => { nameMap[p.id] = p.full_name || ""; });
+        const { data: profs } = await supabase.from("profiles").select("id, full_name").in("id", userIds);
+        (profs || []).forEach((p: any) => { nameMap[p.id] = p.full_name || ""; });
       }
       setEventos((evData as any[]).map((e) => ({
         ...e,
@@ -148,54 +75,30 @@ export function EventCalendar() {
       })));
     }
 
-    // REUNIÕES 1:1
     const { data: reData, error: reError } = await supabase
-      .from("one_on_one")
-      .select("id, data_reuniao, hora_reuniao, liderado_nome")
+      .from("one_on_one").select("id, data_reuniao, hora_reuniao, liderado_nome")
       .or(`gestor_id.eq.${user.id},liderado_id.eq.${user.id}`)
-      .gte("data_reuniao", startOfMonth)
-      .lte("data_reuniao", endOfMonth);
-
-    if (reError) {
-      console.error("[Calendário] erro ao buscar reuniões:", reError.message);
-      setReunioes([]);
-    } else if (reData) {
+      .gte("data_reuniao", startOfMonth).lte("data_reuniao", endOfMonth);
+    if (reError) { console.error("[Calendário] reuniões:", reError.message); setReunioes([]); }
+    else if (reData) {
       setReunioes((reData as any[]).map((r) => ({
-        id: r.id,
-        titulo: `1:1 — ${r.liderado_nome}`,
-        data: r.data_reuniao,
+        id: r.id, titulo: `1:1 — ${r.liderado_nome}`, data: r.data_reuniao,
         hora: r.hora_reuniao ? r.hora_reuniao.slice(0, 5) : null,
       })));
     }
 
-    // AVISOS com data — select("*") + filtro no cliente (tolerante a coluna ausente)
-    const { data: avData, error: avError } = await supabase
-      .from("avisos")
-      .select("*");
-
-    if (avError) {
-      console.error("[Calendário] erro ao buscar avisos:", avError.message);
-      setAvisos([]);
-    } else if (avData) {
+    const { data: avData, error: avError } = await supabase.from("avisos").select("*");
+    if (avError) { console.error("[Calendário] avisos:", avError.message); setAvisos([]); }
+    else if (avData) {
       const comData = (avData as any[]).filter(
         (a) => a.data_inicio && a.data_inicio >= startOfMonth && a.data_inicio <= endOfMonth
           && (!a.destinatarios || a.destinatarios.length === 0 || a.destinatarios.includes(user.id) || a.created_by === user.id)
       );
-      setAvisos(comData.map((a) => ({
-        id: a.id,
-        titulo: a.titulo,
-        data: a.data_inicio,
-        link: a.link ?? null,
-      })));
+      setAvisos(comData.map((a) => ({ id: a.id, titulo: a.titulo, data: a.data_inicio, link: a.link ?? null })));
     }
   }, [year, month, user?.id]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
-
-  useEffect(() => {
-    supabase.from("profiles").select("id, full_name").order("full_name")
-      .then(({ data }) => setProfiles((data as UserOption[]) ?? []));
-  }, []);
 
   const today = new Date();
   const firstDay = new Date(year, month, 1);
@@ -210,149 +113,22 @@ export function EventCalendar() {
 
   const eventsByDay = new Map<string, Evento[]>();
   for (const e of eventos) {
-    const key = e.data_inicio;
-    if (!eventsByDay.has(key)) eventsByDay.set(key, []);
-    eventsByDay.get(key)!.push(e);
+    if (!eventsByDay.has(e.data_inicio)) eventsByDay.set(e.data_inicio, []);
+    eventsByDay.get(e.data_inicio)!.push(e);
   }
-
   const reunioesByDay = new Map<string, ReuniaoItem[]>();
   for (const r of reunioes) {
     if (!reunioesByDay.has(r.data)) reunioesByDay.set(r.data, []);
     reunioesByDay.get(r.data)!.push(r);
   }
-
   const avisosByDay = new Map<string, AvisoItem[]>();
   for (const a of avisos) {
     if (!avisosByDay.has(a.data)) avisosByDay.set(a.data, []);
     avisosByDay.get(a.data)!.push(a);
   }
 
-  const openNew = (dayStr: string) => {
-    setEditingEvento(null);
-    setForm({ ...emptyForm(), data_inicio: dayStr });
-    setDialogOpen(true);
-  };
-
-  const openEdit = (e: Evento, ev: React.MouseEvent) => {
-    ev.stopPropagation();
-    setEditingEvento(e);
-    setForm({
-      titulo: e.titulo,
-      descricao: e.descricao || "",
-      data_inicio: e.data_inicio,
-      data_fim: e.data_fim || "",
-      hora_inicio: e.hora_inicio || "",
-      hora_fim: e.hora_fim || "",
-      dia_todo: e.dia_todo,
-      visibilidade: (e.visibilidade as "todos" | "privado") || "todos",
-      participantes: e.participantes ?? [],
-      repetir: false,
-      meses: 3,
-    });
-    setDialogOpen(true);
-  };
-
-  const handleSave = async () => {
-    if (!form.titulo.trim()) {
-      toast({ title: "Título obrigatório", variant: "destructive" });
-      return;
-    }
-    setSaving(true);
-    const payload = {
-      titulo: form.titulo.trim(),
-      descricao: form.descricao.trim() || null,
-      data_inicio: form.data_inicio,
-      data_fim: form.data_fim || null,
-      hora_inicio: form.dia_todo ? null : (form.hora_inicio || null),
-      hora_fim: form.dia_todo ? null : (form.hora_fim || null),
-      dia_todo: form.dia_todo,
-      visibilidade: form.visibilidade,
-      participantes: form.participantes.length > 0 ? form.participantes : null,
-      criado_por: user?.id ?? null,
-    };
-
-    const resumo = (ev: { titulo: string; data_inicio: string; descricao?: string | null; dia_todo?: boolean; hora_inicio?: string | null; visibilidade?: string }) =>
-      `Título: ${ev.titulo}\nData: ${ev.data_inicio}${ev.dia_todo === false && ev.hora_inicio ? `\nHora: ${ev.hora_inicio}` : ""}${ev.descricao ? `\nDescrição: ${ev.descricao}` : ""}\nVisibilidade: ${ev.visibilidade === "privado" ? "Só para mim" : "Todos"}`;
-
-    if (editingEvento) {
-      const { error } = await supabase.from("eventos").update(payload).eq("id", editingEvento.id);
-      if (error) { toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" }); }
-      else {
-        if (user) logAudit(user.id, fullName, `Editou o evento "${form.titulo}"`, "Calendário", {
-          antes: resumo(editingEvento),
-          depois: resumo({ ...form }),
-        });
-        const antesIds = editingEvento.participantes ?? [];
-        const horaAntes = editingEvento.hora_inicio ? editingEvento.hora_inicio.slice(0, 5) : "";
-        const mudouDataHora = editingEvento.data_inicio !== form.data_inicio || horaAntes !== (form.hora_inicio || "");
-        // Participantes novos: aviso de marcação
-        const novos = form.participantes.filter((id) => !antesIds.includes(id) && id !== user?.id);
-        notificar(novos, {
-          titulo: `Você foi marcado em um evento`,
-          descricao: `${form.titulo} — ${form.data_inicio}${!form.dia_todo && form.hora_inicio ? ` às ${form.hora_inicio}` : ""}`,
-          tipo: "evento",
-          link: "/",
-        });
-        // Participantes que já estavam: aviso de remarcação (se data/hora mudou)
-        if (mudouDataHora) {
-          const jaEstavam = antesIds.filter((id) => form.participantes.includes(id) && id !== user?.id);
-          notificar(jaEstavam, {
-            titulo: `Evento remarcado: ${form.titulo}`,
-            descricao: `Nova data: ${form.data_inicio}${!form.dia_todo && form.hora_inicio ? ` às ${form.hora_inicio}` : ""}.`,
-            tipo: "evento",
-            link: "/",
-          });
-        }
-        toast({ title: "Evento atualizado" });
-      }
-    } else {
-      const { error } = await supabase.from("eventos").insert(payload);
-      if (error) { toast({ title: "Erro ao criar evento", description: error.message, variant: "destructive" }); }
-      else {
-        if (user) logAudit(user.id, fullName, `Criou o evento "${form.titulo}"`, "Calendário", {
-          depois: resumo({ ...form }),
-        });
-        // Recorrência: cria os próximos eventos mensais
-        const datas = form.repetir ? gerarDatasMensais(form.data_inicio, form.meses).slice(1) : [];
-        if (datas.length > 0) {
-          await supabase.from("eventos").insert(
-            datas.map((d) => ({ ...payload, data_inicio: d, data_fim: null }))
-          );
-        }
-        notificar(form.participantes.filter((id) => id !== user?.id), {
-          titulo: `Você foi marcado em um evento`,
-          descricao: datas.length > 0
-            ? `${form.titulo} — a partir de ${form.data_inicio}, mensal`
-            : `${form.titulo} — ${form.data_inicio}${!form.dia_todo && form.hora_inicio ? ` às ${form.hora_inicio}` : ""}`,
-          tipo: "evento",
-          link: "/",
-        });
-        toast({ title: datas.length > 0 ? `Evento criado (${datas.length + 1} ocorrências)` : "Evento criado" });
-      }
-    }
-
-    setSaving(false);
-    setDialogOpen(false);
-    fetchAll();
-  };
-
-  const handleDelete = async () => {
-    if (!editingEvento) return;
-    setDeleting(true);
-    const { error } = await supabase.from("eventos").delete().eq("id", editingEvento.id);
-    setDeleting(false);
-    if (error) { toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" }); }
-    else {
-      if (user) logAudit(user.id, fullName, `Excluiu o evento "${editingEvento.titulo}"`, "Calendário", {
-        antes: `Título: ${editingEvento.titulo}\nData: ${editingEvento.data_inicio}`,
-      });
-      toast({ title: "Evento excluído" });
-      setDialogOpen(false);
-      fetchAll();
-    }
-  };
-
-  const canEditOrDelete = editingEvento && (editingEvento.criado_por === user?.id);
+  const openNew = (dayStr: string) => { setEditingEvento(null); setNewDate(dayStr); setDialogOpen(true); };
+  const openEdit = (e: Evento, ev: React.MouseEvent) => { ev.stopPropagation(); setEditingEvento(e); setNewDate(undefined); setDialogOpen(true); };
 
   const selectedDayEvts = selectedDay ? (eventsByDay.get(selectedDay) || []) : [];
   const selectedDayRe = selectedDay ? (reunioesByDay.get(selectedDay) || []) : [];
@@ -362,7 +138,6 @@ export function EventCalendar() {
     <>
       <Card className="shadow-sm">
         <CardContent className="p-5">
-          {/* Header */}
           <div className="flex items-center gap-2 mb-4">
             <CalendarDays className="h-5 w-5 text-primary" />
             <h3 className="font-bold text-foreground text-sm">Calendário</h3>
@@ -377,7 +152,6 @@ export function EventCalendar() {
             </div>
           </div>
 
-          {/* Grid */}
           <div className="grid grid-cols-7 gap-px">
             {WEEKDAYS.map((wd) => (
               <div key={wd} className="text-[10px] font-semibold text-muted-foreground text-center py-1">{wd}</div>
@@ -390,64 +164,44 @@ export function EventCalendar() {
               const dayAv = dayStr ? (avisosByDay.get(dayStr) || []) : [];
               const isSelected = dayStr === selectedDay;
               const totalItems = dayEvts.length + dayRe.length + dayAv.length;
-
               return (
-                <div
-                  key={i}
+                <div key={i}
                   onClick={() => { if (!day) return; setSelectedDay(isSelected ? null : dayStr); }}
                   className={`min-h-[5rem] border rounded p-1 flex flex-col gap-0.5 transition-colors
                     ${day ? "cursor-pointer" : "bg-muted/30 border-transparent"}
                     ${isToday ? "ring-2 ring-primary/50 border-primary/30" : "border-border/50"}
-                    ${isSelected ? "bg-primary/5" : day ? "bg-card hover:bg-accent/20" : ""}
-                  `}
+                    ${isSelected ? "bg-primary/5" : day ? "bg-card hover:bg-accent/20" : ""}`}
                 >
                   {day && (
                     <>
                       <div className="flex items-center justify-between">
                         <span className={`text-[11px] font-medium leading-none
-                          ${isToday ? "bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center" : "text-foreground"}
-                        `}>{day}</span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); openNew(dayStr); }}
+                          ${isToday ? "bg-primary text-primary-foreground rounded-full w-5 h-5 flex items-center justify-center" : "text-foreground"}`}>{day}</span>
+                        <button onClick={(e) => { e.stopPropagation(); openNew(dayStr); }}
                           className="opacity-0 hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity p-0.5 rounded"
-                          style={{ opacity: isSelected ? 1 : undefined }}
-                        >
+                          style={{ opacity: isSelected ? 1 : undefined }}>
                           <Plus className="h-3 w-3" />
                         </button>
                       </div>
                       {dayEvts.slice(0, 2).map((e) => (
-                        <div
-                          key={e.id}
-                          onClick={(ev) => openEdit(e, ev)}
-                          className={`text-[10px] leading-tight px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 ${colorForEvent(e.id)}`}
-                          title={e.titulo}
-                        >
+                        <div key={e.id} onClick={(ev) => openEdit(e, ev)}
+                          className={`text-[10px] leading-tight px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 ${colorForEvent(e.id)}`} title={e.titulo}>
                           {!e.dia_todo && e.hora_inicio ? `${e.hora_inicio.slice(0, 5)} ` : ""}{e.titulo}
                         </div>
                       ))}
                       {dayRe.slice(0, 1).map((r) => (
-                        <div
-                          key={r.id}
-                          onClick={(ev) => { ev.stopPropagation(); navigate(`/meus-one-on-one/${r.id}`); }}
-                          className={`text-[10px] leading-tight px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 ${REUNIAO_COLOR}`}
-                          title={r.titulo}
-                        >
+                        <div key={r.id} onClick={(ev) => { ev.stopPropagation(); navigate(`/meus-one-on-one/${r.id}`); }}
+                          className={`text-[10px] leading-tight px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 ${REUNIAO_COLOR}`} title={r.titulo}>
                           👥 {r.titulo}
                         </div>
                       ))}
                       {dayAv.slice(0, 1).map((a) => (
-                        <div
-                          key={a.id}
-                          onClick={(ev) => { ev.stopPropagation(); setSelectedDay(dayStr); }}
-                          className={`text-[10px] leading-tight px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 ${AVISO_COLOR}`}
-                          title={a.titulo}
-                        >
+                        <div key={a.id} onClick={(ev) => { ev.stopPropagation(); setSelectedDay(dayStr); }}
+                          className={`text-[10px] leading-tight px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 ${AVISO_COLOR}`} title={a.titulo}>
                           📢 {a.titulo}
                         </div>
                       ))}
-                      {totalItems > 3 && (
-                        <span className="text-[10px] text-muted-foreground pl-1">+{totalItems - 3}</span>
-                      )}
+                      {totalItems > 3 && (<span className="text-[10px] text-muted-foreground pl-1">+{totalItems - 3}</span>)}
                     </>
                   )}
                 </div>
@@ -455,7 +209,6 @@ export function EventCalendar() {
             })}
           </div>
 
-          {/* Selected day panel */}
           {selectedDay && (
             <div className="mt-4 border-t pt-4">
               <div className="flex items-center justify-between mb-2">
@@ -471,27 +224,18 @@ export function EventCalendar() {
               ) : (
                 <div className="space-y-2">
                   {selectedDayAv.map((a) => (
-                    <div
-                      key={a.id}
-                      className={`flex items-center justify-between gap-2 p-2 rounded-md border ${AVISO_COLOR}`}
-                    >
+                    <div key={a.id} className={`flex items-center justify-between gap-2 p-2 rounded-md border ${AVISO_COLOR}`}>
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="shrink-0">📢</span>
                         <p className="text-sm font-medium truncate">{a.titulo}</p>
                       </div>
                       {a.link && (
-                        <a href={a.link} target="_blank" rel="noopener noreferrer" className="text-[10px] underline shrink-0" onClick={(e) => e.stopPropagation()}>
-                          abrir →
-                        </a>
+                        <a href={a.link} target="_blank" rel="noopener noreferrer" className="text-[10px] underline shrink-0" onClick={(e) => e.stopPropagation()}>abrir →</a>
                       )}
                     </div>
                   ))}
                   {selectedDayRe.map((r) => (
-                    <div
-                      key={r.id}
-                      className={`flex items-center justify-between gap-2 p-2 rounded-md border ${REUNIAO_COLOR} cursor-pointer hover:opacity-80`}
-                      onClick={() => navigate(`/meus-one-on-one/${r.id}`)}
-                    >
+                    <div key={r.id} className={`flex items-center justify-between gap-2 p-2 rounded-md border ${REUNIAO_COLOR} cursor-pointer hover:opacity-80`} onClick={() => navigate(`/meus-one-on-one/${r.id}`)}>
                       <div className="flex items-center gap-2 min-w-0">
                         <Users className="h-3.5 w-3.5 shrink-0" />
                         <p className="text-sm font-medium truncate">{r.titulo}{r.hora ? ` · ${r.hora}` : ""}</p>
@@ -500,7 +244,8 @@ export function EventCalendar() {
                     </div>
                   ))}
                   {selectedDayEvts.map((e) => (
-                    <div key={e.id} className={`flex items-start justify-between gap-2 p-2 rounded-md border ${colorForEvent(e.id)}`}>
+                    <div key={e.id} className={`flex items-start justify-between gap-2 p-2 rounded-md border cursor-pointer hover:opacity-90 ${colorForEvent(e.id)}`}
+                      onClick={(ev) => openEdit(e, ev)}>
                       <div className="min-w-0">
                         <p className="text-sm font-medium flex items-center gap-1">
                           {e.visibilidade === "privado" && <Lock className="h-3 w-3 opacity-60" />}
@@ -512,11 +257,7 @@ export function EventCalendar() {
                         {e.descricao && <p className="text-xs opacity-70 mt-0.5">{e.descricao}</p>}
                         {e.criador_nome && <p className="text-[10px] opacity-50 mt-0.5">{e.criador_nome}</p>}
                       </div>
-                      {e.criado_por === user?.id && (
-                        <button onClick={(ev) => openEdit(e, ev)} className="shrink-0 p-1 rounded hover:bg-black/10">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                      )}
+                      <Pencil className="h-3.5 w-3.5 shrink-0 opacity-50" />
                     </div>
                   ))}
                 </div>
@@ -526,123 +267,13 @@ export function EventCalendar() {
         </CardContent>
       </Card>
 
-      {/* Create / Edit dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingEvento ? "Editar evento" : "Novo evento"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="evt-titulo">Título *</Label>
-              <Input id="evt-titulo" value={form.titulo} onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))} placeholder="Ex: Reunião de equipe" className="mt-1" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="evt-inicio">Data início *</Label>
-                <Input id="evt-inicio" type="date" value={form.data_inicio} onChange={(e) => setForm((f) => ({ ...f, data_inicio: e.target.value }))} className="mt-1" />
-              </div>
-              <div>
-                <Label htmlFor="evt-fim">Data fim</Label>
-                <Input id="evt-fim" type="date" value={form.data_fim} onChange={(e) => setForm((f) => ({ ...f, data_fim: e.target.value }))} className="mt-1" />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                id="evt-diatodo"
-                type="checkbox"
-                checked={form.dia_todo}
-                onChange={(e) => setForm((f) => ({ ...f, dia_todo: e.target.checked }))}
-                className="rounded"
-              />
-              <Label htmlFor="evt-diatodo" className="cursor-pointer">Dia todo</Label>
-            </div>
-            {!form.dia_todo && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="evt-hora-inicio">Hora início</Label>
-                  <Input id="evt-hora-inicio" type="time" value={form.hora_inicio} onChange={(e) => setForm((f) => ({ ...f, hora_inicio: e.target.value }))} className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="evt-hora-fim">Hora fim</Label>
-                  <Input id="evt-hora-fim" type="time" value={form.hora_fim} onChange={(e) => setForm((f) => ({ ...f, hora_fim: e.target.value }))} className="mt-1" />
-                </div>
-              </div>
-            )}
-            <div>
-              <Label htmlFor="evt-desc">Descrição</Label>
-              <Textarea id="evt-desc" value={form.descricao} onChange={(e) => setForm((f) => ({ ...f, descricao: e.target.value }))} placeholder="Detalhes opcionais..." rows={2} className="mt-1 resize-none" />
-            </div>
-            <div>
-              <Label htmlFor="evt-vis">Visibilidade</Label>
-              <Select value={form.visibilidade} onValueChange={(v) => setForm((f) => ({ ...f, visibilidade: v as "todos" | "privado" }))}>
-                <SelectTrigger id="evt-vis" className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">📅 Mostrar no calendário (todos veem)</SelectItem>
-                  <SelectItem value="privado">🔒 Só para mim (lembrete pessoal)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Marcar pessoas (avisar e mostrar no calendário delas)</Label>
-              <div className="mt-1">
-                <UserMultiSelect
-                  users={profiles}
-                  selected={form.participantes}
-                  onChange={(ids) => setForm((f) => ({ ...f, participantes: ids }))}
-                  placeholder="Marcar participantes..."
-                />
-              </div>
-              {form.participantes.length > 0 && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  As pessoas marcadas recebem uma notificação e veem o evento no calendário delas.
-                </p>
-              )}
-            </div>
-            {!editingEvento && (
-              <div className="rounded-md border border-border/60 bg-muted/30 p-3">
-                <div className="flex items-center gap-2">
-                  <input
-                    id="evt-repetir"
-                    type="checkbox"
-                    checked={form.repetir}
-                    onChange={(e) => setForm((f) => ({ ...f, repetir: e.target.checked }))}
-                    className="rounded"
-                  />
-                  <Label htmlFor="evt-repetir" className="cursor-pointer">Repetir todo mês</Label>
-                  {form.repetir && (
-                    <div className="flex items-center gap-1.5 ml-2">
-                      <span className="text-sm text-muted-foreground">por</span>
-                      <Input type="number" min={2} max={12} value={form.meses}
-                        onChange={(e) => setForm((f) => ({ ...f, meses: Math.min(12, Math.max(2, Number(e.target.value) || 2)) }))}
-                        className="w-16 h-8" />
-                      <span className="text-sm text-muted-foreground">meses</span>
-                    </div>
-                  )}
-                </div>
-                {form.repetir && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Serão criados {form.meses} eventos mensais. Você pode editar cada um depois (data/hora).
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-          <DialogFooter className="gap-2 flex-wrap">
-            {canEditOrDelete && (
-              <Button variant="destructive" size="sm" disabled={deleting} onClick={handleDelete}>
-                <Trash2 className="h-4 w-4 mr-1" />{deleting ? "Excluindo..." : "Excluir"}
-              </Button>
-            )}
-            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-            <Button size="sm" disabled={saving} onClick={handleSave}>
-              {saving ? "Salvando..." : editingEvento ? "Salvar" : "Criar evento"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EventoDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        editing={editingEvento}
+        defaultDate={newDate}
+        onSaved={fetchAll}
+      />
     </>
   );
 }
