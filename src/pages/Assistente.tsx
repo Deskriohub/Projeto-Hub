@@ -58,7 +58,15 @@ const Assistente = () => {
         },
       );
 
-      if (!res.ok || !res.body) throw new Error("Erro na requisição");
+      if (!res.ok) {
+        let detalhe = "";
+        try {
+          const j = await res.json();
+          detalhe = j?.error ? ` (${typeof j.error === "string" ? j.error : JSON.stringify(j.error)})` : "";
+        } catch { /* sem corpo JSON */ }
+        throw new Error(`Status ${res.status}${detalhe}`);
+      }
+      if (!res.body) throw new Error("Sem resposta do servidor");
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -85,12 +93,13 @@ const Assistente = () => {
           }
         }
       }
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {
           role: "assistant",
-          content: "Desculpe, ocorreu um erro. Tente novamente.",
+          content: `Desculpe, ocorreu um erro. ${msg}`,
         };
         return updated;
       });

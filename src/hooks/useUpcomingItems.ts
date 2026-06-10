@@ -34,15 +34,12 @@ export function useUpcomingItems() {
     const [evRes, avRes, reRes] = await Promise.all([
       supabase
         .from("eventos")
-        .select("id, titulo, data_inicio, hora_inicio, dia_todo")
+        .select("*")
         .gte("data_inicio", today)
         .lte("data_inicio", endStr),
       supabase
         .from("avisos")
-        .select("id, titulo, link, data_evento")
-        .not("data_evento", "is", null)
-        .gte("data_evento", today)
-        .lte("data_evento", endStr),
+        .select("*"),
       supabase
         .from("one_on_one")
         .select("id, data_reuniao, liderado_nome")
@@ -67,6 +64,7 @@ export function useUpcomingItems() {
 
     if (!avRes.error && avRes.data) {
       for (const a of avRes.data as any[]) {
+        if (!a.data_evento || a.data_evento < today || a.data_evento > endStr) continue;
         result.push({
           id: `av-${a.id}`,
           tipo: "aviso",

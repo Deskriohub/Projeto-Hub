@@ -4,10 +4,14 @@ import { Lock, Smile, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface Elogio {
   id: string;
   created_at: string;
+  remetente_id: string;
+  destinatario_id: string;
   remetente_nome: string;
   destinatario_nome: string;
   mensagem: string;
@@ -15,11 +19,20 @@ interface Elogio {
   publico: boolean;
 }
 
+function getInitials(name: string): string {
+  const parts = (name || "").trim().split(" ").filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export const ElogiosRecebidos = () => {
   const { user } = useAuth();
   const [items, setItems] = useState<Elogio[]>([]);
+  const [avatarMap, setAvatarMap] = useState<Record<string, string | null>>({});
   const [loaded, setLoaded] = useState(false);
   const [view, setView] = useState<"recebidos" | "todos">("recebidos");
+  const [selected, setSelected] = useState<Elogio | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -27,20 +40,36 @@ export const ElogiosRecebidos = () => {
       setLoaded(false);
       let query = supabase
         .from("elogios")
-        .select("id, created_at, remetente_nome, destinatario_nome, mensagem, emoji, publico");
+        .select("id, created_at, remetente_id, destinatario_id, remetente_nome, destinatario_nome, mensagem, emoji, publico");
       if (view === "recebidos") {
         query = query.eq("destinatario_id", user.id);
       } else {
         query = query.eq("publico", true);
       }
       const { data } = await query.order("created_at", { ascending: false }).limit(5);
-      setItems((data as Elogio[]) || []);
+      const list = (data as Elogio[]) || [];
+      setItems(list);
+
+      const ids = Array.from(new Set(list.flatMap((e) => [e.remetente_id, e.destinatario_id]).filter(Boolean)));
+      if (ids.length > 0) {
+        const { data: profiles } = await supabase.from("profiles").select("id, avatar_url").in("id", ids);
+        const map: Record<string, string | null> = {};
+        (profiles as any[] || []).forEach((p) => { map[p.id] = p.avatar_url ?? null; });
+        setAvatarMap(map);
+      }
       setLoaded(true);
     };
     load();
   }, [user, view]);
 
   if (!loaded) return null;
+
+  const miniAvatar = (id: string, nome: string) => (
+    <Avatar className="h-6 w-6 shrink-0">
+      <AvatarImage src={avatarMap[id] ?? ""} alt={nome} />
+      <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-semibold">{getInitials(nome)}</AvatarFallback>
+    </Avatar>
+  );
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
@@ -70,12 +99,18 @@ export const ElogiosRecebidos = () => {
       ) : (
       <div className="grid gap-2">
         {items.map((el) => (
-          <div key={el.id} className="flex items-start gap-3 rounded-lg border border-border/60 bg-background/50 p-3">
+          <button
+            key={el.id}
+            onClick={() => setSelected(el)}
+            className="flex items-start gap-3 rounded-lg border border-border/60 bg-background/50 p-3 text-left hover:bg-accent/30 transition-colors"
+          >
             <div className="text-2xl shrink-0">{el.emoji}</div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap text-sm">
+              <div className="flex items-center gap-1.5 flex-wrap text-sm">
+                {miniAvatar(el.remetente_id, el.remetente_nome)}
                 <span className="font-semibold text-foreground">{el.remetente_nome}</span>
                 <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                {miniAvatar(el.destinatario_id, el.destinatario_nome)}
                 <span className="font-semibold text-foreground">{el.destinatario_nome}</span>
                 {!el.publico && (
                   <Badge variant="secondary" className="text-xs">
@@ -83,12 +118,12 @@ export const ElogiosRecebidos = () => {
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-foreground mt-1 break-words whitespace-pre-wrap">{el.mensagem}</p>
+              <p className="text-sm text-foreground mt-1 break-words whitespace-pre-wrap line-clamp-2">{el.mensagem}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 {new Date(el.created_at).toLocaleString("pt-BR")}
               </p>
             </div>
-          </div>
+          </button>
         ))}
       </div>
       )}
@@ -98,6 +133,40 @@ export const ElogiosRecebidos = () => {
       >
         Ver mural de elogios →
       </Link>
+
+      {/* Detalhe com fotos grandes */}
+      <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">{selected?.emoji}</span> Elogio
+            </DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center gap-4">
+                <div className="flex flex-col items-center gap-1">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={avatarMap[selected.remetente_id] ?? ""} alt={selected.remetente_nome} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">{getInitials(selected.remetente_nome)}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-medium text-center">{selected.remetente_nome}</span>
+                </div>
+                <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                <div className="flex flex-col items-center gap-1">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={avatarMap[selected.destinatario_id] ?? ""} alt={selected.destinatario_nome} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">{getInitials(selected.destinatario_nome)}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-medium text-center">{selected.destinatario_nome}</span>
+                </div>
+              </div>
+              <p className="text-sm text-foreground whitespace-pre-wrap p-3 bg-muted/40 rounded-md text-center">{selected.mensagem}</p>
+              <p className="text-xs text-muted-foreground text-center">{new Date(selected.created_at).toLocaleString("pt-BR")}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

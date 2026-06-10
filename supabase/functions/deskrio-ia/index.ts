@@ -121,6 +121,21 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Procura a chave da OpenRouter em vários nomes possíveis de secret
+    const apiKey =
+      Deno.env.get("OPENROUTER_API_KEY_CENTRALDESK") ||
+      Deno.env.get("OPENROUTER_API_KEY") ||
+      Deno.env.get("OPENROUTER_KEY") ||
+      Deno.env.get("OPENROUTER");
+
+    if (!apiKey) {
+      console.error("Nenhuma secret da OpenRouter encontrada.");
+      return new Response(
+        JSON.stringify({ error: "Chave da OpenRouter não configurada. Defina a secret OPENROUTER_API_KEY no Supabase." }),
+        { status: 500, headers: { ...CORS, "Content-Type": "application/json" } },
+      );
+    }
+
     const websiteContent = await getWebsiteContent(supabase);
     const manualContent = await getPlatformManual(supabase);
     const adminContext = await getAdminContext(supabase);
@@ -152,7 +167,7 @@ Para outros assuntos, use seu conhecimento geral.`;
     const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${Deno.env.get("OPENROUTER_API_KEY_CENTRALDESK")}`,
+        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://centraldeskrio.com.br",
         "X-Title": "Central DeskRio — Deskinho",

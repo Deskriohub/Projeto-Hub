@@ -105,27 +105,25 @@ export function EventCalendar() {
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
-    const startOfMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-    const endOfMonth = `${year}-${String(month + 1).padStart(2, "0")}-31`;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const lastDayNum = new Date(year, month + 1, 0).getDate();
+    const startOfMonth = `${year}-${pad(month + 1)}-01`;
+    const endOfMonth = `${year}-${pad(month + 1)}-${pad(lastDayNum)}`;
 
-    const [{ data: evData }, { data: reData }] = await Promise.all([
-      supabase
-        .from("eventos")
-        .select("id, titulo, descricao, data_inicio, data_fim, hora_inicio, hora_fim, dia_todo, visibilidade, criado_por")
-        .lte("data_inicio", endOfMonth)
-        .gte("data_inicio", startOfMonth)
-        .order("data_inicio", { ascending: true }),
-      supabase
-        .from("one_on_one")
-        .select("id, data_reuniao, liderado_nome")
-        .or(`gestor_id.eq.${user.id},liderado_id.eq.${user.id}`)
-        .gte("data_reuniao", startOfMonth)
-        .lte("data_reuniao", endOfMonth),
-    ]);
+    // EVENTOS — select("*") evita erro caso alguma coluna (ex: visibilidade) não exista
+    const { data: evData, error: evError } = await supabase
+      .from("eventos")
+      .select("*")
+      .gte("data_inicio", startOfMonth)
+      .lte("data_inicio", endOfMonth)
+      .order("data_inicio", { ascending: true });
 
-    if (evData) {
+    if (evError) {
+      console.error("[Calendário] erro ao buscar eventos:", evError.message);
+      setEventos([]);
+    } else if (evData) {
       const userIds = Array.from(new Set((evData as any[]).map((e) => e.criado_por).filter(Boolean)));
-      let nameMap: Record<string, string> = {};
+      const nameMap: Record<string, string> = {};
       if (userIds.length > 0) {
         const { data: profiles } = await supabase
           .from("profiles")
@@ -135,11 +133,23 @@ export function EventCalendar() {
       }
       setEventos((evData as any[]).map((e) => ({
         ...e,
+        visibilidade: e.visibilidade ?? "todos",
         criador_nome: e.criado_por ? (nameMap[e.criado_por] || "") : "",
       })));
     }
 
-    if (reData) {
+    // REUNIÕES 1:1
+    const { data: reData, error: reError } = await supabase
+      .from("one_on_one")
+      .select("id, data_reuniao, liderado_nome")
+      .or(`gestor_id.eq.${user.id},liderado_id.eq.${user.id}`)
+      .gte("data_reuniao", startOfMonth)
+      .lte("data_reuniao", endOfMonth);
+
+    if (reError) {
+      console.error("[Calendário] erro ao buscar reuniões:", reError.message);
+      setReunioes([]);
+    } else if (reData) {
       setReunioes((reData as any[]).map((r) => ({
         id: r.id,
         titulo: `1:1 — ${r.liderado_nome}`,
@@ -147,23 +157,24 @@ export function EventCalendar() {
       })));
     }
 
-    // Avisos com data definida (coluna data_evento) — tolerante caso a coluna não exista
+    // AVISOS com data — select("*") + filtro no cliente (tolerante a coluna ausente)
     const { data: avData, error: avError } = await supabase
       .from("avisos")
-      .select("id, titulo, link, data_evento")
-      .not("data_evento", "is", null)
-      .gte("data_evento", startOfMonth)
-      .lte("data_evento", endOfMonth);
+      .select("*");
 
-    if (!avError && avData) {
-      setAvisos((avData as any[]).map((a) => ({
+    if (avError) {
+      console.error("[Calendário] erro ao buscar avisos:", avError.message);
+      setAvisos([]);
+    } else if (avData) {
+      const comData = (avData as any[]).filter(
+        (a) => a.data_evento && a.data_evento >= startOfMonth && a.data_evento <= endOfMonth
+      );
+      setAvisos(comData.map((a) => ({
         id: a.id,
         titulo: a.titulo,
         data: a.data_evento,
         link: a.link ?? null,
       })));
-    } else {
-      setAvisos([]);
     }
   }, [year, month, user?.id]);
 

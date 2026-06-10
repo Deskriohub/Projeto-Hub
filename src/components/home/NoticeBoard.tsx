@@ -53,13 +53,18 @@ export function NoticeBoard() {
                   <div
                     key={notice.id}
                     onClick={() => setSelected(notice)}
-                    className="p-3 rounded-md bg-muted/50 border border-border/50 flex items-center justify-between gap-2 cursor-pointer hover:bg-accent/40 transition-colors"
+                    className="p-3 rounded-md bg-muted/50 border border-border/50 flex items-start justify-between gap-2 cursor-pointer hover:bg-accent/40 transition-colors"
                   >
-                    <p className="text-sm font-semibold text-foreground truncate">{notice.titulo}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-foreground truncate">{notice.titulo}</p>
+                      {notice.observacao && (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notice.observacao}</p>
+                      )}
+                    </div>
                     {notice.link && (
                       <a href={notice.link} target="_blank" rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline shrink-0">
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline shrink-0 mt-0.5">
                         Ver link <ExternalLink className="h-3 w-3" />
                       </a>
                     )}

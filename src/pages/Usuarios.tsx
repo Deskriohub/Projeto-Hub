@@ -105,8 +105,8 @@ const Usuarios = () => {
     e.target.value = ""; // permite reenviar o mesmo arquivo depois
     if (!file || !userId) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: "Arquivo muito grande", description: "Use uma imagem menor que 2MB.", variant: "destructive" });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: "Use uma imagem menor que 5MB.", variant: "destructive" });
       return;
     }
 

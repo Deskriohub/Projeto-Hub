@@ -133,8 +133,8 @@ export default function Configuracoes() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: "Arquivo muito grande", description: "Use uma imagem menor que 2MB.", variant: "destructive" });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Arquivo muito grande", description: "Use uma imagem menor que 5MB.", variant: "destructive" });
       return;
     }
 
@@ -239,7 +239,7 @@ export default function Configuracoes() {
               >
                 {uploadingPhoto ? "Enviando..." : "Alterar foto"}
               </Button>
-              <p className="text-xs text-muted-foreground">JPG, PNG ou WebP — máx. 2MB</p>
+              <p className="text-xs text-muted-foreground">JPG, PNG ou WebP — máx. 5MB</p>
             </div>
           </div>
         </CardContent>
