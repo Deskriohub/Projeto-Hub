@@ -14,7 +14,7 @@ interface Message {
 }
 
 const INITIAL: Message[] = [
-  { role: "assistant", content: "Olá! Sou o Deskinho, assistente virtual da DeskRio. Pode me perguntar qualquer coisa — dúvidas sobre a plataforma, perguntas de clientes, ou qualquer outro assunto. Como posso ajudar?" },
+  { role: "assistant", content: "Olá! Sou o Deskinho, assistente virtual da DeskRio. Como posso te ajudar?" },
 ];
 
 const Assistente = () => {

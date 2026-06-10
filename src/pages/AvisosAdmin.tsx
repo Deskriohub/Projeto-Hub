@@ -8,6 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -22,15 +25,15 @@ interface Aviso {
   created_at: string;
 }
 
+const emptyForm = () => ({ titulo: "", link: "", observacao: "", publico: "todos" as "todos" | "admin" });
+
 export default function AvisosAdmin() {
   const { role } = useUserRole();
   const isAdmin = role === "admin";
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [loading, setLoading] = useState(true);
-  const [titulo, setTitulo] = useState("");
-  const [link, setLink] = useState("");
-  const [observacao, setObservacao] = useState("");
-  const [publico, setPublico] = useState<"todos" | "admin">("todos");
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
 
   const fetchAvisos = async () => {
@@ -44,24 +47,48 @@ export default function AvisosAdmin() {
 
   useEffect(() => { fetchAvisos(); }, []);
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!titulo.trim()) return;
+  const handleAdd = async () => {
+    if (!form.titulo.trim()) return;
     setSaving(true);
-    const { error } = await supabase.from("avisos").insert({
-      titulo: titulo.trim(),
-      link: link.trim() || null,
-      observacao: observacao.trim() || null,
-      publico,
-    });
+
+    const payload: Record<string, unknown> = {
+      titulo: form.titulo.trim(),
+      link: form.link.trim() || null,
+    };
+
+    // Adiciona campos opcionais se existirem na tabela
+    try {
+      Object.assign(payload, {
+        observacao: form.observacao.trim() || null,
+        publico: form.publico,
+      });
+    } catch {
+      // colunas não existem ainda — ignora
+    }
+
+    const { error } = await supabase.from("avisos").insert(payload);
     setSaving(false);
     if (error) {
-      toast({ title: "Erro ao criar aviso", description: error.message, variant: "destructive" });
-    } else {
-      setTitulo(""); setLink(""); setObservacao(""); setPublico("todos");
-      toast({ title: "Aviso publicado" });
-      fetchAvisos();
+      // Tenta sem os campos novos caso a coluna ainda não exista no banco
+      if (error.message.includes("column") && (error.message.includes("observacao") || error.message.includes("publico"))) {
+        const { error: e2 } = await supabase.from("avisos").insert({
+          titulo: form.titulo.trim(),
+          link: form.link.trim() || null,
+        });
+        if (e2) {
+          toast({ title: "Erro ao criar aviso", description: e2.message, variant: "destructive" });
+          return;
+        }
+      } else {
+        toast({ title: "Erro ao criar aviso", description: error.message, variant: "destructive" });
+        return;
+      }
     }
+
+    setForm(emptyForm());
+    setOpen(false);
+    toast({ title: "Aviso publicado com sucesso!" });
+    fetchAvisos();
   };
 
   const handleDelete = async (id: string) => {
@@ -74,53 +101,21 @@ export default function AvisosAdmin() {
     }
   };
 
+  const openNew = () => { setForm(emptyForm()); setOpen(true); };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Megaphone className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold">Avisos</h1>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Megaphone className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Avisos</h1>
+        </div>
+        {isAdmin && (
+          <Button onClick={openNew}>
+            <Plus className="h-4 w-4 mr-1" /> Novo Aviso
+          </Button>
+        )}
       </div>
-
-      {isAdmin && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Plus className="h-4 w-4 text-primary" /> Novo aviso
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleAdd} className="flex flex-col gap-3 max-w-lg">
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="titulo">Título *</Label>
-                <Input id="titulo" placeholder="Ex: Reunião geral na sexta às 15h" value={titulo} onChange={(e) => setTitulo(e.target.value)} required />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="obs">Observação</Label>
-                <Textarea id="obs" placeholder="Detalhes adicionais sobre o aviso..." value={observacao} onChange={(e) => setObservacao(e.target.value)} rows={2} className="resize-none" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="link">Link (opcional)</Label>
-                <Input id="link" placeholder="https://..." value={link} onChange={(e) => setLink(e.target.value)} type="url" />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="publico">Visível para</Label>
-                <Select value={publico} onValueChange={(v) => setPublico(v as "todos" | "admin")}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os usuários</SelectItem>
-                    <SelectItem value="admin">Somente admins</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button type="submit" disabled={saving || !titulo.trim()} className="self-start">
-                {saving ? "Publicando..." : "Publicar aviso"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      )}
 
       <Card>
         <CardHeader>
@@ -138,9 +133,11 @@ export default function AvisosAdmin() {
                   <div className="flex flex-col gap-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-medium">{a.titulo}</p>
-                      <Badge variant={a.publico === "admin" ? "destructive" : "secondary"} className="text-[10px] h-4">
-                        {a.publico === "admin" ? "Só admins" : "Todos"}
-                      </Badge>
+                      {a.publico && (
+                        <Badge variant={a.publico === "admin" ? "destructive" : "secondary"} className="text-[10px] h-4">
+                          {a.publico === "admin" ? "Só admins" : "Todos"}
+                        </Badge>
+                      )}
                     </div>
                     {a.observacao && <p className="text-xs text-muted-foreground">{a.observacao}</p>}
                     {a.link && (
@@ -162,6 +159,67 @@ export default function AvisosAdmin() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={open} onOpenChange={(v) => { if (!saving) setOpen(v); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-4 w-4 text-primary" /> Novo aviso
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="av-titulo">Título *</Label>
+              <Input
+                id="av-titulo"
+                placeholder="Ex: Reunião geral na sexta às 15h"
+                value={form.titulo}
+                onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))}
+                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="av-obs">Observação</Label>
+              <Textarea
+                id="av-obs"
+                placeholder="Detalhes adicionais sobre o aviso..."
+                value={form.observacao}
+                onChange={(e) => setForm((f) => ({ ...f, observacao: e.target.value }))}
+                rows={2}
+                className="resize-none"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="av-link">Link (opcional)</Label>
+              <Input
+                id="av-link"
+                placeholder="https://..."
+                value={form.link}
+                onChange={(e) => setForm((f) => ({ ...f, link: e.target.value }))}
+                type="url"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Visível para</Label>
+              <Select value={form.publico} onValueChange={(v) => setForm((f) => ({ ...f, publico: v as "todos" | "admin" }))}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os usuários</SelectItem>
+                  <SelectItem value="admin">Somente admins</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancelar</Button>
+            <Button onClick={handleAdd} disabled={saving || !form.titulo.trim()}>
+              {saving ? "Publicando..." : "Publicar aviso"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

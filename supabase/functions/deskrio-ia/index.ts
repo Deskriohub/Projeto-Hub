@@ -10,7 +10,7 @@ const WEBSITE_URLS = [
   "https://deskrio.com.br/quem-somos/",
 ];
 
-const CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12h
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 
 function stripHtml(html: string): string {
   return html
@@ -25,52 +25,57 @@ function stripHtml(html: string): string {
 }
 
 async function getWebsiteContent(supabase: ReturnType<typeof createClient>): Promise<string> {
-  const { data: cached } = await supabase
-    .from("ia_context_cache")
-    .select("content, fetched_at")
-    .eq("id", "website")
-    .maybeSingle();
+  try {
+    const { data: cached } = await supabase
+      .from("ia_context_cache")
+      .select("content, fetched_at")
+      .eq("id", "website")
+      .maybeSingle();
 
-  if (cached) {
-    const age = Date.now() - new Date(cached.fetched_at).getTime();
-    if (age < CACHE_TTL_MS) return cached.content;
-  }
-
-  const parts: string[] = [];
-  for (const url of WEBSITE_URLS) {
-    try {
-      const res = await fetch(url, { headers: { "User-Agent": "DeskRio-IA/1.0" } });
-      const html = await res.text();
-      parts.push(`## ${url}\n${stripHtml(html)}`);
-    } catch {
-      // ignora erros de fetch
+    if (cached && cached.fetched_at) {
+      const age = Date.now() - new Date(cached.fetched_at).getTime();
+      if (age < CACHE_TTL_MS && cached.content) return cached.content;
     }
+
+    const parts: string[] = [];
+    for (const url of WEBSITE_URLS) {
+      try {
+        const res = await fetch(url, { signal: AbortSignal.timeout(5000), headers: { "User-Agent": "DeskRio-IA/1.0" } });
+        const html = await res.text();
+        parts.push(`## ${url}\n${stripHtml(html)}`);
+      } catch {
+        // site inacessível — ignora
+      }
+    }
+
+    const content = parts.join("\n\n");
+    if (content) {
+      await supabase.from("ia_context_cache").upsert({
+        id: "website",
+        content,
+        fetched_at: new Date().toISOString(),
+      });
+    }
+    return content;
+  } catch {
+    return "";
   }
-
-  const content = parts.join("\n\n");
-  await supabase.from("ia_context_cache").upsert({
-    id: "website",
-    content,
-    fetched_at: new Date().toISOString(),
-  });
-
-  return content;
 }
 
 async function getPlatformManual(supabase: ReturnType<typeof createClient>): Promise<string> {
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("ajuda_artigos")
-      .select("titulo, categoria, conteudo")
-      .order("categoria")
-      .order("ordem");
+      .select("titulo, categoria, ordem, conteudo")
+      .order("categoria", { ascending: true })
+      .order("ordem", { ascending: true });
 
-    if (!data || data.length === 0) return "";
+    if (error || !data || data.length === 0) return "";
 
-    const grouped: Record<string, typeof data> = {};
-    for (const art of data) {
+    const grouped: Record<string, Array<{ titulo: string; conteudo: string }>> = {};
+    for (const art of data as Array<{ titulo: string; categoria: string; conteudo: string }>) {
       if (!grouped[art.categoria]) grouped[art.categoria] = [];
-      grouped[art.categoria].push(art);
+      grouped[art.categoria].push({ titulo: art.titulo, conteudo: art.conteudo });
     }
 
     return Object.entries(grouped)
@@ -78,6 +83,19 @@ async function getPlatformManual(supabase: ReturnType<typeof createClient>): Pro
         `### ${cat}\n` + arts.map((a) => `**${a.titulo}**\n${a.conteudo}`).join("\n\n")
       )
       .join("\n\n");
+  } catch {
+    return "";
+  }
+}
+
+async function getAdminContext(supabase: ReturnType<typeof createClient>): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from("configuracoes")
+      .select("valor")
+      .eq("id", "ia_contexto")
+      .maybeSingle();
+    return data?.valor?.trim() ?? "";
   } catch {
     return "";
   }
@@ -92,36 +110,44 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { message, history = [] } = await req.json();
-    if (!message?.trim()) {
+    const body = await req.json();
+    const message: string = body?.message ?? "";
+    const history: Array<{ role: string; content: string }> = body?.history ?? [];
+
+    if (!message.trim()) {
       return new Response(JSON.stringify({ error: "message obrigatório" }), {
         status: 400,
         headers: { ...CORS, "Content-Type": "application/json" },
       });
     }
 
-    const [websiteContent, manualContent, ctxRow] = await Promise.all([
-      getWebsiteContent(supabase),
-      getPlatformManual(supabase),
-      supabase.from("configuracoes").select("valor").eq("id", "ia_contexto").maybeSingle()
-        .then(({ data }) => data?.valor?.trim() ?? ""),
-    ]);
+    const websiteContent = await getWebsiteContent(supabase);
+    const manualContent = await getPlatformManual(supabase);
+    const adminContext = await getAdminContext(supabase);
 
-    const systemPrompt = `Você é o Deskinho, assistente virtual inteligente da DeskRio.
+    let systemPrompt = `Você é o Deskinho, assistente virtual inteligente da DeskRio.
 
-Você é um assistente geral — pode responder qualquer tipo de pergunta como um assistente de inteligência artificial completo (como o ChatGPT). Isso inclui:
-- Dúvidas sobre a plataforma Central de Gestão DeskRio
-- Dúvidas gerais de trabalho, comunicação, gestão de pessoas
+Você é um assistente completo e pode ajudar com qualquer tipo de pergunta:
+- Dúvidas sobre como usar a plataforma Central de Gestão DeskRio
+- Perguntas gerais de trabalho, comunicação, gestão de pessoas e atendimento
 - Perguntas de clientes que os funcionários precisam responder
-- Redação de textos, e-mails, mensagens
-- Qualquer outra questão que o funcionário precisar de ajuda
+- Redação de textos, e-mails, mensagens profissionais
+- Qualquer outro assunto que o funcionário precisar de ajuda
 
-Responda sempre em português do Brasil, de forma clara, amigável e objetiva.
-Seja direto e prático — os funcionários precisam de respostas rápidas.
-Quando a pergunta for sobre a plataforma, use o Manual da Plataforma abaixo como referência prioritária.
-Para outros assuntos, use seu conhecimento geral.
+Responda sempre em português do Brasil.
+Seja direto, claro e acolhedor — use linguagem simples e tom calmo e explicativo.
+Para perguntas sobre a plataforma, use o Manual da Plataforma como referência principal.
+Para outros assuntos, use seu conhecimento geral.`;
 
-${ctxRow ? `## Informações sobre a empresa (configurado pelo admin)\n${ctxRow}\n\n` : ""}${manualContent ? `## Manual da Plataforma DeskRio\n${manualContent}\n\n` : ""}${websiteContent ? `## Conteúdo do site DeskRio\n${websiteContent}` : ""}`;
+    if (adminContext) {
+      systemPrompt += `\n\n## Informações sobre a empresa\n${adminContext}`;
+    }
+    if (manualContent) {
+      systemPrompt += `\n\n## Manual da Plataforma DeskRio\n${manualContent}`;
+    }
+    if (websiteContent) {
+      systemPrompt += `\n\n## Site DeskRio\n${websiteContent}`;
+    }
 
     const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -146,6 +172,7 @@ ${ctxRow ? `## Informações sobre a empresa (configurado pelo admin)\n${ctxRow}
 
     if (!orRes.ok) {
       const err = await orRes.text();
+      console.error("OpenRouter error:", err);
       return new Response(JSON.stringify({ error: err }), {
         status: 502,
         headers: { ...CORS, "Content-Type": "application/json" },
@@ -160,6 +187,7 @@ ${ctxRow ? `## Informações sobre a empresa (configurado pelo admin)\n${ctxRow}
       },
     });
   } catch (e) {
+    console.error("Edge function error:", e);
     return new Response(JSON.stringify({ error: String(e) }), {
       status: 500,
       headers: { ...CORS, "Content-Type": "application/json" },

@@ -7,6 +7,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { ElogioReacoes } from "@/components/elogios/ElogioReacoes";
 
@@ -22,11 +23,24 @@ interface Elogio {
   publico: boolean;
 }
 
+interface ProfileAvatar {
+  url: string | null;
+  initials: string;
+}
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 const MuralElogios = () => {
   const { user } = useAuth();
   const { role } = useUserRole();
   const navigate = useNavigate();
   const [elogios, setElogios] = useState<Elogio[]>([]);
+  const [profileMap, setProfileMap] = useState<Record<string, ProfileAvatar>>({});
   const [filter, setFilter] = useState<"todos" | "recebidos" | "enviados">("todos");
 
   const load = async () => {
@@ -35,12 +49,24 @@ const MuralElogios = () => {
       .from("elogios")
       .select("*")
       .order("created_at", { ascending: false });
-    setElogios((data as Elogio[]) || []);
+    const list = (data as Elogio[]) || [];
+    setElogios(list);
+
+    const ids = Array.from(new Set(list.flatMap((e) => [e.remetente_id, e.destinatario_id]).filter(Boolean)));
+    if (ids.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", ids);
+      const map: Record<string, ProfileAvatar> = {};
+      (profiles as any[] || []).forEach((p) => {
+        map[p.id] = { url: p.avatar_url ?? null, initials: getInitials(p.full_name || "?") };
+      });
+      setProfileMap(map);
+    }
   };
 
-  useEffect(() => {
-    load();
-  }, [user]);
+  useEffect(() => { load(); }, [user]);
 
   const canDelete = (el: Elogio) =>
     !!user && (el.remetente_id === user.id || el.destinatario_id === user.id || role === "admin");
@@ -53,6 +79,11 @@ const MuralElogios = () => {
     }
     setElogios((prev) => prev.filter((e) => e.id !== id));
   };
+
+  const visible =
+    filter === "recebidos" ? elogios.filter((e) => user && e.destinatario_id === user.id)
+    : filter === "enviados" ? elogios.filter((e) => user && e.remetente_id === user.id)
+    : elogios;
 
   return (
     <div>
@@ -72,7 +103,7 @@ const MuralElogios = () => {
       </div>
 
       <div className="mb-4">
-        <Tabs value={filter} onValueChange={(v) => setFilter(v as "todos" | "recebidos" | "enviados")}>
+        <Tabs value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
           <TabsList>
             <TabsTrigger value="todos">Todos</TabsTrigger>
             <TabsTrigger value="recebidos">Recebidos</TabsTrigger>
@@ -81,59 +112,67 @@ const MuralElogios = () => {
         </Tabs>
       </div>
 
-      {(() => {
-        const visible =
-          filter === "recebidos"
-            ? elogios.filter((e) => user && e.destinatario_id === user.id)
-            : filter === "enviados"
-              ? elogios.filter((e) => user && e.remetente_id === user.id)
-              : elogios;
-        return visible.length === 0 ? (
+      {visible.length === 0 ? (
         <p className="text-muted-foreground text-sm">Nenhum elogio para exibir.</p>
       ) : (
         <div className="grid gap-3">
-          {visible.map((el) => (
-            <div
-              key={el.id}
-              className="group rounded-xl border border-border bg-card p-5 flex items-start gap-4"
-            >
-              <div className="text-3xl shrink-0">{el.emoji}</div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap text-sm">
-                  <span className="font-semibold text-foreground">{el.remetente_nome}</span>
-                  <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="font-semibold text-foreground">{el.destinatario_nome}</span>
-                  {el.publico ? (
-                    <Badge className="text-xs border-transparent bg-purple-600 text-white hover:bg-purple-600/90">
-                      Público
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-xs">
-                      <Lock className="h-3 w-3 mr-1" /> Privado
-                    </Badge>
-                  )}
+          {visible.map((el) => {
+            const from = profileMap[el.remetente_id];
+            const to = profileMap[el.destinatario_id];
+            return (
+              <div
+                key={el.id}
+                className="group rounded-xl border border-border bg-card p-5 flex items-start gap-4"
+              >
+                <div className="text-3xl shrink-0">{el.emoji}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap text-sm mb-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={from?.url ?? ""} alt={el.remetente_nome} />
+                      <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-semibold">
+                        {from?.initials ?? el.remetente_nome.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-semibold text-foreground">{el.remetente_nome}</span>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={to?.url ?? ""} alt={el.destinatario_nome} />
+                      <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-semibold">
+                        {to?.initials ?? el.destinatario_nome.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="font-semibold text-foreground">{el.destinatario_nome}</span>
+                    {el.publico ? (
+                      <Badge className="text-xs border-transparent bg-purple-600 text-white hover:bg-purple-600/90">
+                        Público
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">
+                        <Lock className="h-3 w-3 mr-1" /> Privado
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-foreground break-words">{el.mensagem}</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {new Date(el.created_at).toLocaleString("pt-BR")}
+                  </p>
+                  <ElogioReacoes elogioId={el.id} />
                 </div>
-                <p className="text-foreground mt-2 break-words">{el.mensagem}</p>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {new Date(el.created_at).toLocaleString("pt-BR")}
-                </p>
-                <ElogioReacoes elogioId={el.id} />
+                {canDelete(el) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(el.id)}
+                    aria-label="Excluir elogio"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                )}
               </div>
-              {canDelete(el) && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleDelete(el.id)}
-                  aria-label="Excluir elogio"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
-      );
-      })()}
+      )}
     </div>
   );
 };
