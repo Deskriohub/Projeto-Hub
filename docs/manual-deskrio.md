@@ -15,7 +15,7 @@ Além disso, há o **Dono da plataforma** (criador): um admin especial que enxer
 O perfil de cada pessoa é definido por um admin na tela de Usuários. A área "Administração" só aparece no menu para quem é admin.
 
 ### Times e permissões por gestor
-Cada admin é líder de um time. Na tela de Usuários, define-se o "Gestor responsável" de cada liderado. Com isso:
+Cada admin é líder de um time. O "Gestor responsável" de cada pessoa só pode ser definido/alterado pelo **Dono da plataforma** (na tela de Usuários) — os demais admins veem o gestor, mas não podem mudá-lo. Com isso:
 - Um admin de time vê apenas os One-on-One do próprio time (e os registros de auditoria de 1:1 do próprio time).
 - Um admin não vê os 1:1 nem os logs de 1:1 de outro time.
 - O Dono da plataforma vê tudo, acima dos admins de time.
@@ -162,7 +162,7 @@ O Deskinho aprende com os materiais que o admin sobe na Base de Conhecimento. Pa
 
 Em "Usuários", o admin vê todos os cadastrados e pode:
 - Alterar o perfil de cada pessoa (Admin ou Usuário).
-- Definir o "Gestor responsável" de cada usuário (a qual líder/time a pessoa pertence). Isso controla quem vê os 1:1 e os logs de 1:1 dela. Admins aparecem como "Líder de time".
+- Ver o "Gestor responsável" de cada usuário (a qual líder/time a pessoa pertence) — isso controla quem vê os 1:1 e os logs de 1:1 dela. **Somente o Dono da plataforma** consegue alterar esse campo; para os demais admins ele é apenas leitura. Admins aparecem como "Líder de time".
 - Subir a foto de qualquer pessoa: passar o mouse no avatar da coluna Foto e clicar (imagens até 5MB).
 
 Novos usuários se cadastram pelo login; depois o admin define o perfil.

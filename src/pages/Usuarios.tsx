@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import { useIsOwner } from "@/hooks/useIsOwner";
 import { logAudit } from "@/lib/auditLog";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -38,6 +39,7 @@ function getInitials(name: string | null): string {
 const Usuarios = () => {
   const { user } = useAuth();
   const { fullName } = useProfile();
+  const { isOwner } = useIsOwner();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -322,7 +324,7 @@ const Usuarios = () => {
                     <TableCell>
                       {u.role === "admin" ? (
                         <span className="text-xs text-muted-foreground italic">Líder de time</span>
-                      ) : (
+                      ) : isOwner ? (
                         <Select
                           value={u.gestor_id ?? "none"}
                           onValueChange={(val) => updateGestor(u.id, val === "none" ? null : val)}
@@ -337,6 +339,10 @@ const Usuarios = () => {
                             ))}
                           </SelectContent>
                         </Select>
+                      ) : (
+                        <span className="text-sm text-foreground">
+                          {u.gestor_id ? (users.find((g) => g.id === u.gestor_id)?.full_name ?? "—") : "—"}
+                        </span>
                       )}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">

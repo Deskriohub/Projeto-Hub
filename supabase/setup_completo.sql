@@ -247,3 +247,23 @@ END; $$;
 DROP TRIGGER IF EXISTS trg_on_nova_sugestao ON public.sugestoes;
 CREATE TRIGGER trg_on_nova_sugestao AFTER INSERT ON public.sugestoes
 FOR EACH ROW EXECUTE FUNCTION public.on_nova_sugestao();
+
+-- ---------- PROFILES: só o DONO pode mudar gestor_id / is_owner ----------
+-- (admins comuns continuam podendo trocar foto, etc., mas não remanejam times)
+CREATE OR REPLACE FUNCTION public.guard_profile_owner_fields()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  -- auth.uid() NULL = execução via SQL/seed/service role → liberado
+  IF auth.uid() IS NOT NULL AND NOT public.is_owner(auth.uid()) THEN
+    IF NEW.gestor_id IS DISTINCT FROM OLD.gestor_id THEN
+      RAISE EXCEPTION 'Apenas o dono da plataforma pode alterar o gestor responsável.';
+    END IF;
+    IF NEW.is_owner IS DISTINCT FROM OLD.is_owner THEN
+      RAISE EXCEPTION 'Apenas o dono da plataforma pode alterar essa configuração.';
+    END IF;
+  END IF;
+  RETURN NEW;
+END; $$;
+DROP TRIGGER IF EXISTS trg_guard_profile_owner_fields ON public.profiles;
+CREATE TRIGGER trg_guard_profile_owner_fields BEFORE UPDATE ON public.profiles
+FOR EACH ROW EXECUTE FUNCTION public.guard_profile_owner_fields();
