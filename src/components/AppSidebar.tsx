@@ -71,12 +71,12 @@ export function AppSidebar() {
   ];
 
   const recursosTail: SimpleNavItem[] = [
+    { title: "Avisos", url: "/avisos", icon: Megaphone },
     { title: "Assistente IA", url: "/assistente", icon: Bot },
   ];
 
   const adminItems: SimpleNavItem[] = [
     { title: "Usuários", url: "/usuarios", icon: Users },
-    { title: "Avisos", url: "/avisos", icon: Megaphone },
     { title: "Sugestões", url: "/sugestoes", icon: Lightbulb },
     { title: "Configurações", url: "/configuracoes", icon: Settings },
   ];

@@ -14,7 +14,7 @@ export const ROLE_LABELS: Record<string, string> = {
 
 export const ROUTE_PERMISSIONS: Record<string, AppRole> = {
   "/": "geral",
-  "/relatorios": "geral",
+  "/relatorios": "admin",
   "/assistente": "geral",
   "/usuarios": "admin",
   "/one-on-one": "admin",
@@ -23,13 +23,13 @@ export const ROUTE_PERMISSIONS: Record<string, AppRole> = {
   "/elogios": "geral",
   "/mural-elogios": "geral",
   "/sugestoes": "admin",
-  "/avisos": "admin",
+  "/avisos": "geral",
   "/configuracoes": "admin",
 };
 
 export const NAV_PERMISSIONS: Record<string, AppRole> = {
   "/": "geral",
-  "/relatorios": "geral",
+  "/relatorios": "admin",
   "/assistente": "geral",
   "/usuarios": "admin",
   "/one-on-one": "admin",
@@ -37,7 +37,7 @@ export const NAV_PERMISSIONS: Record<string, AppRole> = {
   "/elogios": "geral",
   "/mural-elogios": "geral",
   "/sugestoes": "admin",
-  "/avisos": "admin",
+  "/avisos": "geral",
   "/configuracoes": "admin",
 };
 

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface Aviso {
   id: string;
@@ -15,6 +16,8 @@ interface Aviso {
 }
 
 export default function AvisosAdmin() {
+  const { role } = useUserRole();
+  const isAdmin = role === "admin";
   const [avisos, setAvisos] = useState<Aviso[]>([]);
   const [loading, setLoading] = useState(true);
   const [titulo, setTitulo] = useState("");
@@ -68,40 +71,42 @@ export default function AvisosAdmin() {
         <h1 className="text-2xl font-bold">Avisos</h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Plus className="h-4 w-4 text-primary" /> Novo aviso
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAdd} className="flex flex-col gap-3 max-w-lg">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="titulo">Título</Label>
-              <Input
-                id="titulo"
-                placeholder="Ex: Reunião geral na sexta às 15h"
-                value={titulo}
-                onChange={(e) => setTitulo(e.target.value)}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="link">Link (opcional)</Label>
-              <Input
-                id="link"
-                placeholder="https://..."
-                value={link}
-                onChange={(e) => setLink(e.target.value)}
-                type="url"
-              />
-            </div>
-            <Button type="submit" disabled={saving || !titulo.trim()} className="self-start">
-              {saving ? "Salvando..." : "Publicar aviso"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Plus className="h-4 w-4 text-primary" /> Novo aviso
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAdd} className="flex flex-col gap-3 max-w-lg">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="titulo">Título</Label>
+                <Input
+                  id="titulo"
+                  placeholder="Ex: Reunião geral na sexta às 15h"
+                  value={titulo}
+                  onChange={(e) => setTitulo(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="link">Link (opcional)</Label>
+                <Input
+                  id="link"
+                  placeholder="https://..."
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
+                  type="url"
+                />
+              </div>
+              <Button type="submit" disabled={saving || !titulo.trim()} className="self-start">
+                {saving ? "Salvando..." : "Publicar aviso"}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -132,14 +137,16 @@ export default function AvisosAdmin() {
                       </a>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 text-muted-foreground hover:text-destructive"
-                    onClick={() => handleDelete(a.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {isAdmin && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDelete(a.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
