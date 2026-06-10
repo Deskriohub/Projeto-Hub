@@ -167,12 +167,12 @@ export function EventCalendar() {
       setAvisos([]);
     } else if (avData) {
       const comData = (avData as any[]).filter(
-        (a) => a.data_evento && a.data_evento >= startOfMonth && a.data_evento <= endOfMonth
+        (a) => a.data_inicio && a.data_inicio >= startOfMonth && a.data_inicio <= endOfMonth
       );
       setAvisos(comData.map((a) => ({
         id: a.id,
         titulo: a.titulo,
-        data: a.data_evento,
+        data: a.data_inicio,
         link: a.link ?? null,
       })));
     }

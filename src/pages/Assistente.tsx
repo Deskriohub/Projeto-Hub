@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Bot, Send, Loader2, Trash2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,15 +138,23 @@ const Assistente = () => {
                   )}
                 </Avatar>
                 <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                  className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                     msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-tr-sm"
+                      ? "bg-primary text-primary-foreground rounded-tr-sm whitespace-pre-wrap"
                       : "bg-muted text-foreground rounded-tl-sm"
                   }`}
                 >
-                  {msg.content || (loading && i === messages.length - 1
-                    ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : null)}
+                  {msg.role === "assistant" ? (
+                    msg.content ? (
+                      <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-headings:my-2">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                    ) : (loading && i === messages.length - 1
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : null)
+                  ) : (
+                    msg.content
+                  )}
                 </div>
               </div>
             ))}

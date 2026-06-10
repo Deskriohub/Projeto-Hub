@@ -22,11 +22,16 @@ interface Aviso {
   link: string | null;
   observacao: string | null;
   publico: string;
-  data_evento: string | null;
+  data_inicio: string | null;
+  data_fim: string | null;
   created_at: string;
 }
 
-const emptyForm = () => ({ titulo: "", link: "", observacao: "", publico: "todos" as "todos" | "admin", data_evento: "" });
+const emptyForm = () => ({ titulo: "", link: "", observacao: "", publico: "todos" as "todos" | "admin", data_inicio: "", data_fim: "" });
+
+function fmtDate(d: string) {
+  return new Date(d + "T12:00:00").toLocaleDateString("pt-BR");
+}
 
 export default function AvisosAdmin() {
   const { role } = useUserRole();
@@ -40,7 +45,7 @@ export default function AvisosAdmin() {
   const fetchAvisos = async () => {
     const { data, error } = await supabase
       .from("avisos")
-      .select("id, titulo, link, observacao, publico, data_evento, created_at")
+      .select("id, titulo, link, observacao, publico, data_inicio, data_fim, created_at")
       .order("created_at", { ascending: false });
     if (!error) setAvisos((data as Aviso[]) ?? []);
     setLoading(false);
@@ -57,7 +62,8 @@ export default function AvisosAdmin() {
       link: form.link.trim() || null,
       observacao: form.observacao.trim() || null,
       publico: form.publico,
-      data_evento: form.data_evento || null,
+      data_inicio: form.data_inicio || null,
+      data_fim: form.data_fim || null,
     };
 
     const { error } = await supabase.from("avisos").insert(payload);
@@ -120,9 +126,9 @@ export default function AvisosAdmin() {
                           {a.publico === "admin" ? "Só admins" : "Todos"}
                         </Badge>
                       )}
-                      {a.data_evento && (
+                      {(a.data_inicio || a.data_fim) && (
                         <Badge variant="outline" className="text-[10px] h-4 border-amber-300 text-amber-700">
-                          📅 {new Date(a.data_evento + "T12:00:00").toLocaleDateString("pt-BR")}
+                          📅 {a.data_inicio ? fmtDate(a.data_inicio) : "..."}{a.data_fim ? ` → ${fmtDate(a.data_fim)}` : ""}
                         </Badge>
                       )}
                     </div>
@@ -186,16 +192,30 @@ export default function AvisosAdmin() {
                 type="url"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="av-data">Data (opcional — aparece no calendário)</Label>
-              <Input
-                id="av-data"
-                type="date"
-                value={form.data_evento}
-                onChange={(e) => setForm((f) => ({ ...f, data_evento: e.target.value }))}
-                className="w-48"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="av-inicio">Início (opcional)</Label>
+                <Input
+                  id="av-inicio"
+                  type="date"
+                  value={form.data_inicio}
+                  onChange={(e) => setForm((f) => ({ ...f, data_inicio: e.target.value }))}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="av-fim">Fim (opcional)</Label>
+                <Input
+                  id="av-fim"
+                  type="date"
+                  value={form.data_fim}
+                  onChange={(e) => setForm((f) => ({ ...f, data_fim: e.target.value }))}
+                />
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground -mt-1">
+              Com data de início, o aviso aparece no calendário e só fica visível a partir dela.
+              Com data de fim, ele some automaticamente depois. Sem datas, fica sempre visível.
+            </p>
             <div className="flex flex-col gap-1.5">
               <Label>Visível para</Label>
               <Select value={form.publico} onValueChange={(v) => setForm((f) => ({ ...f, publico: v as "todos" | "admin" }))}>

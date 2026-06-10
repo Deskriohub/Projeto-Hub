@@ -12,6 +12,14 @@ interface Notice {
   link: string | null;
   observacao: string | null;
   publico: string;
+  data_inicio: string | null;
+  data_fim: string | null;
+}
+
+function todayStr(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 export function NoticeBoard() {
@@ -24,12 +32,17 @@ export function NoticeBoard() {
   useEffect(() => {
     supabase
       .from("avisos")
-      .select("id, titulo, link, observacao, publico")
+      .select("id, titulo, link, observacao, publico, data_inicio, data_fim")
       .eq("ativo", true)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
+        const hoje = todayStr();
         const all = (data as Notice[]) ?? [];
-        setNotices(isAdmin ? all : all.filter((n) => n.publico === "todos"));
+        // Janela de visibilidade: dentro de [data_inicio, data_fim] (nulos = aberto)
+        const naJanela = all.filter(
+          (n) => (!n.data_inicio || n.data_inicio <= hoje) && (!n.data_fim || n.data_fim >= hoje)
+        );
+        setNotices(isAdmin ? naJanela : naJanela.filter((n) => n.publico === "todos"));
         setLoading(false);
       });
   }, [isAdmin]);

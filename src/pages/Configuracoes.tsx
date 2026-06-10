@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings, Eye, EyeOff, KeyRound, Bot, Camera, ShieldCheck, RefreshCw } from "lucide-react";
+import { Settings, Eye, EyeOff, KeyRound, Bot, Camera, ShieldCheck, RefreshCw, BookOpen, ChevronRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,6 +109,7 @@ export default function Configuracoes() {
   const { user } = useAuth();
   const { role } = useUserRole();
   const { fullName, initials, avatarUrl } = useProfile();
+  const navigate = useNavigate();
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -312,6 +314,29 @@ export default function Configuracoes() {
             />
             <Button onClick={handleSaveIA} disabled={savingIA} className="self-start">
               {savingIA ? "Salvando..." : "Salvar contexto"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {role === "admin" && (
+        <Card
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => navigate("/base-conhecimento")}
+        >
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BookOpen className="h-4 w-4 text-primary" /> Base de Conhecimento da IA
+            </CardTitle>
+            <CardDescription>
+              Envie materiais (PDF ou texto) com processos e procedimentos da DeskRio.
+              O Deskinho usa esse conteúdo para responder dúvidas da equipe.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full justify-between" onClick={() => navigate("/base-conhecimento")}>
+              Gerenciar documentos
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </CardContent>
         </Card>

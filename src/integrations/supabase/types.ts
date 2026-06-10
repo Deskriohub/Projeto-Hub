@@ -44,6 +44,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_documentos: {
+        Row: {
+          id: string
+          nome: string
+          conteudo: string
+          arquivo_url: string | null
+          tamanho: number
+          created_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          nome: string
+          conteudo: string
+          arquivo_url?: string | null
+          tamanho?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          nome?: string
+          conteudo?: string
+          arquivo_url?: string | null
+          tamanho?: number
+          created_at?: string
+          created_by?: string | null
+        }
+        Relationships: []
+      }
       avisos: {
         Row: {
           id: string
@@ -51,7 +81,8 @@ export type Database = {
           link: string | null
           observacao: string | null
           publico: string
-          data_evento: string | null
+          data_inicio: string | null
+          data_fim: string | null
           ativo: boolean
           created_at: string
           created_by: string | null
@@ -62,7 +93,8 @@ export type Database = {
           link?: string | null
           observacao?: string | null
           publico?: string
-          data_evento?: string | null
+          data_inicio?: string | null
+          data_fim?: string | null
           ativo?: boolean
           created_at?: string
           created_by?: string | null
@@ -73,7 +105,8 @@ export type Database = {
           link?: string | null
           observacao?: string | null
           publico?: string
-          data_evento?: string | null
+          data_inicio?: string | null
+          data_fim?: string | null
           ativo?: boolean
           created_at?: string
           created_by?: string | null

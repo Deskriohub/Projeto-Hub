@@ -64,12 +64,12 @@ export function useUpcomingItems() {
 
     if (!avRes.error && avRes.data) {
       for (const a of avRes.data as any[]) {
-        if (!a.data_evento || a.data_evento < today || a.data_evento > endStr) continue;
+        if (!a.data_inicio || a.data_inicio < today || a.data_inicio > endStr) continue;
         result.push({
           id: `av-${a.id}`,
           tipo: "aviso",
           titulo: a.titulo,
-          data: a.data_evento,
+          data: a.data_inicio,
           link: a.link ?? null,
         });
       }

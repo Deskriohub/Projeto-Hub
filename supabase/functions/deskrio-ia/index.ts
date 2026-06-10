@@ -88,6 +88,31 @@ async function getPlatformManual(supabase: ReturnType<typeof createClient>): Pro
   }
 }
 
+async function getKnowledgeBase(supabase: ReturnType<typeof createClient>): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from("ia_documentos")
+      .select("nome, conteudo")
+      .order("created_at", { ascending: true });
+
+    if (error || !data || data.length === 0) return "";
+
+    const MAX_TOTAL = 40000; // limite de caracteres para não estourar o contexto
+    let total = 0;
+    const parts: string[] = [];
+    for (const doc of data as Array<{ nome: string; conteudo: string }>) {
+      if (total >= MAX_TOTAL) break;
+      const restante = MAX_TOTAL - total;
+      const trecho = doc.conteudo.slice(0, restante);
+      parts.push(`### ${doc.nome}\n${trecho}`);
+      total += trecho.length;
+    }
+    return parts.join("\n\n");
+  } catch {
+    return "";
+  }
+}
+
 async function getAdminContext(supabase: ReturnType<typeof createClient>): Promise<string> {
   try {
     const { data } = await supabase
@@ -138,6 +163,7 @@ Deno.serve(async (req) => {
 
     const websiteContent = await getWebsiteContent(supabase);
     const manualContent = await getPlatformManual(supabase);
+    const knowledgeBase = await getKnowledgeBase(supabase);
     const adminContext = await getAdminContext(supabase);
 
     let systemPrompt = `Você é o Deskinho, assistente virtual inteligente da DeskRio.
@@ -156,6 +182,9 @@ Para outros assuntos, use seu conhecimento geral.`;
 
     if (adminContext) {
       systemPrompt += `\n\n## Informações sobre a empresa\n${adminContext}`;
+    }
+    if (knowledgeBase) {
+      systemPrompt += `\n\n## Materiais e procedimentos da DeskRio (base de conhecimento)\nUse este conteúdo como fonte principal para dúvidas sobre processos, atendimento e operação da DeskRio.\n${knowledgeBase}`;
     }
     if (manualContent) {
       systemPrompt += `\n\n## Manual da Plataforma DeskRio\n${manualContent}`;
