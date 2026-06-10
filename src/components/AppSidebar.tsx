@@ -191,7 +191,8 @@ export function AppSidebar() {
             <SidebarMenu>
               {renderSimpleItem({ title: "Mural de Elogios", url: "/mural-elogios", icon: Smile })}
               {renderSimpleItem({ title: "Feedbacks", url: "/feedbacks", icon: MessageCircle })}
-              {renderSimpleItem({ title: "Minhas Sugestões", url: "/minhas-sugestoes", icon: Lightbulb })}
+              {/* "Minhas Sugestões" só para usuário comum — admin usa "Sugestões" para responder */}
+              {role !== "admin" && renderSimpleItem({ title: "Minhas Sugestões", url: "/minhas-sugestoes", icon: Lightbulb })}
               {renderSubMenu("One-on-One", CalendarRange, oneOnOneSubItems, "One-on-One")}
             </SidebarMenu>
           </SidebarGroupContent>
