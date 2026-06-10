@@ -1,20 +1,108 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings, Eye, EyeOff, KeyRound, Bot, Camera } from "lucide-react";
+import { Settings, Eye, EyeOff, KeyRound, Bot, Camera, ShieldCheck, RefreshCw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useProfile } from "@/hooks/useProfile";
 import { supabase } from "@/integrations/supabase/client";
+import { logAudit } from "@/lib/auditLog";
 import { toast } from "@/hooks/use-toast";
 
 const ROLE_LABELS: Record<string, string> = { admin: "Admin", gestor: "Admin", geral: "Usuário" };
 const MIN_PASSWORD = 6;
+
+interface AuditEntry {
+  id: string;
+  user_nome: string | null;
+  acao: string;
+  modulo: string;
+  detalhes: string | null;
+  created_at: string;
+}
+
+function formatDateTime(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+const MODULE_COLORS: Record<string, string> = {
+  "Feedbacks":   "bg-purple-100 text-purple-700",
+  "Sugestões":   "bg-yellow-100 text-yellow-700",
+  "Calendário":  "bg-blue-100 text-blue-700",
+  "Avisos":      "bg-orange-100 text-orange-700",
+  "One-on-One":  "bg-green-100 text-green-700",
+  "Perfil":      "bg-pink-100 text-pink-700",
+};
+
+function AuditoriaLog() {
+  const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("auditoria")
+      .select("id, user_nome, acao, modulo, detalhes, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    setEntries((data || []) as AuditEntry[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm text-muted-foreground">Últimas 100 ações realizadas na plataforma.</p>
+        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={load} disabled={loading}>
+          <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} />
+          Atualizar
+        </Button>
+      </div>
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Carregando...</p>
+      ) : entries.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhum registro ainda. Ações na plataforma serão registradas aqui.</p>
+      ) : (
+        <ScrollArea className="h-80 -mx-1 px-1">
+          <div className="space-y-1.5">
+            {entries.map((e) => {
+              const modColor = MODULE_COLORS[e.modulo] ?? "bg-gray-100 text-gray-700";
+              return (
+                <div key={e.id} className="flex items-start gap-3 p-2.5 rounded-md bg-muted/40 border border-border/50">
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap mt-0.5 min-w-[110px]">
+                    {formatDateTime(e.created_at)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <span className="text-xs font-medium text-foreground">{e.user_nome || "—"}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${modColor}`}>
+                        {e.modulo}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{e.acao}</p>
+                    {e.detalhes && (
+                      <p className="text-[10px] text-muted-foreground/70 mt-0.5 italic">{e.detalhes}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      )}
+    </div>
+  );
+}
 
 export default function Configuracoes() {
   const { user } = useAuth();
@@ -78,6 +166,7 @@ export default function Configuracoes() {
       toast({ title: "Erro ao salvar foto", description: profileError.message, variant: "destructive" });
     } else {
       setCurrentAvatar(publicUrl);
+      logAudit(user.id, fullName, "Atualizou foto de perfil", "Perfil");
       toast({ title: "Foto atualizada" });
     }
   };
@@ -90,6 +179,7 @@ export default function Configuracoes() {
     if (error) {
       toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
     } else {
+      if (user) logAudit(user.id, fullName, "Atualizou contexto da IA", "Configurações");
       toast({ title: "Contexto da IA salvo" });
     }
   };
@@ -113,6 +203,7 @@ export default function Configuracoes() {
     }
     setPassword("");
     setConfirm("");
+    if (user) logAudit(user.id, fullName, "Alterou a senha", "Perfil");
     toast({ title: "Senha alterada com sucesso" });
   };
 
@@ -208,7 +299,7 @@ export default function Configuracoes() {
               <Bot className="h-4 w-4 text-primary" /> Contexto da IA
             </CardTitle>
             <CardDescription>
-              Informações extras que a IA deve conhecer — processos internos, políticas, FAQ. O site da DeskRio já é consultado automaticamente.
+              Informações extras que a IA deve conhecer — processos internos, políticas, FAQ.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -222,6 +313,22 @@ export default function Configuracoes() {
             <Button onClick={handleSaveIA} disabled={savingIA} className="self-start">
               {savingIA ? "Salvando..." : "Salvar contexto"}
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {role === "admin" && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-primary" /> Auditoria
+            </CardTitle>
+            <CardDescription>
+              Registro de ações realizadas pelos usuários na plataforma.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AuditoriaLog />
           </CardContent>
         </Card>
       )}

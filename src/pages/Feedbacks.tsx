@@ -30,7 +30,7 @@ function FeedbackCard({
   perspective: "enviado" | "recebido" | "admin";
 }) {
   const [open, setOpen] = useState(false);
-  const tipo = TIPO_CONFIG[fb.tipo as keyof typeof TIPO_CONFIG] ?? TIPO_CONFIG.misto;
+  const tipo = TIPO_CONFIG[fb.tipo as keyof typeof TIPO_CONFIG] ?? TIPO_CONFIG.positivo;
 
   return (
     <>

@@ -3,6 +3,7 @@ import { MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/hooks/useProfile";
+import { logAudit } from "@/lib/auditLog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -34,7 +35,7 @@ interface Profile {
 export const TIPO_CONFIG = {
   positivo:    { label: "Positivo",    color: "bg-green-100 text-green-700 border-green-200" },
   construtivo: { label: "Construtivo", color: "bg-orange-100 text-orange-700 border-orange-200" },
-  misto:       { label: "Misto",       color: "bg-blue-100 text-blue-700 border-blue-200" },
+  negativo:    { label: "Negativo",    color: "bg-red-100 text-red-700 border-red-200" },
 };
 
 interface FeedbackDialogProps {
@@ -70,13 +71,14 @@ export function FeedbackDialog({
     if (!conteudo.trim()) { toast.error("Escreva o conteúdo do feedback."); return; }
 
     const paraNome = profiles.find((p) => p.id === paraId)?.full_name ?? preFilledParaNome ?? "—";
+    const deNome = fullName || "—";
 
     setSaving(true);
     const { data, error } = await supabase
       .from("feedbacks")
       .insert({
         de_user_id: user.id,
-        de_user_nome: fullName || "—",
+        de_user_nome: deNome,
         para_user_id: paraId,
         para_user_nome: paraNome,
         tipo,
@@ -87,6 +89,8 @@ export function FeedbackDialog({
       .single();
     setSaving(false);
     if (error) { toast.error("Erro ao enviar feedback."); return; }
+
+    logAudit(user.id, deNome, `Enviou feedback ${tipo} para ${paraNome}`, "Feedbacks");
     toast.success("Feedback enviado!");
     onClose(data as FeedbackRecord);
   };

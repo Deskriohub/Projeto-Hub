@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Pencil } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { logAudit } from "@/lib/auditLog";
 import { toast } from "@/hooks/use-toast";
 
 interface Evento {
@@ -23,6 +26,12 @@ interface Evento {
   dia_todo: boolean;
   criado_por: string | null;
   criador_nome?: string;
+}
+
+interface ReuniaoItem {
+  id: string;
+  titulo: string;
+  data: string;
 }
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -45,6 +54,8 @@ const EVENT_COLORS = [
   "bg-pink-100 text-pink-800 border-pink-200",
 ];
 
+const REUNIAO_COLOR = "bg-indigo-100 text-indigo-800 border-indigo-200";
+
 function colorForEvent(id: string): string {
   let hash = 0;
   for (let i = 0; i < id.length; i++) hash = id.charCodeAt(i) + ((hash << 5) - hash);
@@ -63,7 +74,10 @@ const emptyForm = () => ({
 
 export function EventCalendar() {
   const { user } = useAuth();
+  const { fullName } = useProfile();
+  const navigate = useNavigate();
   const [eventos, setEventos] = useState<Evento[]>([]);
+  const [reunioes, setReunioes] = useState<ReuniaoItem[]>([]);
   const [viewDate, setViewDate] = useState(() => new Date());
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -75,35 +89,52 @@ export function EventCalendar() {
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
 
-  const fetchEventos = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
+    if (!user) return;
     const startOfMonth = `${year}-${String(month + 1).padStart(2, "0")}-01`;
     const endOfMonth = `${year}-${String(month + 1).padStart(2, "0")}-31`;
-    const { data } = await supabase
-      .from("eventos")
-      .select("id, titulo, descricao, data_inicio, data_fim, hora_inicio, hora_fim, dia_todo, criado_por")
-      .lte("data_inicio", endOfMonth)
-      .gte("data_inicio", startOfMonth)
-      .order("data_inicio", { ascending: true });
 
-    if (!data) return;
+    const [{ data: evData }, { data: reData }] = await Promise.all([
+      supabase
+        .from("eventos")
+        .select("id, titulo, descricao, data_inicio, data_fim, hora_inicio, hora_fim, dia_todo, criado_por")
+        .lte("data_inicio", endOfMonth)
+        .gte("data_inicio", startOfMonth)
+        .order("data_inicio", { ascending: true }),
+      supabase
+        .from("one_on_one")
+        .select("id, data_reuniao, liderado_nome")
+        .or(`gestor_id.eq.${user.id},liderado_id.eq.${user.id}`)
+        .gte("data_reuniao", startOfMonth)
+        .lte("data_reuniao", endOfMonth),
+    ]);
 
-    const userIds = Array.from(new Set(data.map((e: any) => e.criado_por).filter(Boolean)));
-    let nameMap: Record<string, string> = {};
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", userIds);
-      (profiles || []).forEach((p: any) => { nameMap[p.id] = p.full_name || ""; });
+    if (evData) {
+      const userIds = Array.from(new Set((evData as any[]).map((e) => e.criado_por).filter(Boolean)));
+      let nameMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", userIds);
+        (profiles || []).forEach((p: any) => { nameMap[p.id] = p.full_name || ""; });
+      }
+      setEventos((evData as any[]).map((e) => ({
+        ...e,
+        criador_nome: e.criado_por ? (nameMap[e.criado_por] || "") : "",
+      })));
     }
 
-    setEventos((data as any[]).map((e) => ({
-      ...e,
-      criador_nome: e.criado_por ? (nameMap[e.criado_por] || "") : "",
-    })));
-  }, [year, month]);
+    if (reData) {
+      setReunioes((reData as any[]).map((r) => ({
+        id: r.id,
+        titulo: `1:1 — ${r.liderado_nome}`,
+        data: r.data_reuniao,
+      })));
+    }
+  }, [year, month, user?.id]);
 
-  useEffect(() => { fetchEventos(); }, [fetchEventos]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   const today = new Date();
   const firstDay = new Date(year, month, 1);
@@ -121,6 +152,12 @@ export function EventCalendar() {
     const key = e.data_inicio;
     if (!eventsByDay.has(key)) eventsByDay.set(key, []);
     eventsByDay.get(key)!.push(e);
+  }
+
+  const reunioesByDay = new Map<string, ReuniaoItem[]>();
+  for (const r of reunioes) {
+    if (!reunioesByDay.has(r.data)) reunioesByDay.set(r.data, []);
+    reunioesByDay.get(r.data)!.push(r);
   }
 
   const openNew = (dayStr: string) => {
@@ -164,16 +201,22 @@ export function EventCalendar() {
     if (editingEvento) {
       const { error } = await supabase.from("eventos").update(payload).eq("id", editingEvento.id);
       if (error) { toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" }); }
-      else { toast({ title: "Evento atualizado" }); }
+      else {
+        if (user) logAudit(user.id, fullName, `Atualizou evento "${form.titulo}"`, "Calendário");
+        toast({ title: "Evento atualizado" });
+      }
     } else {
       const { error } = await supabase.from("eventos").insert(payload);
       if (error) { toast({ title: "Erro ao criar evento", description: error.message, variant: "destructive" }); }
-      else { toast({ title: "Evento criado" }); }
+      else {
+        if (user) logAudit(user.id, fullName, `Criou evento "${form.titulo}" em ${form.data_inicio}`, "Calendário");
+        toast({ title: "Evento criado" });
+      }
     }
 
     setSaving(false);
     setDialogOpen(false);
-    fetchEventos();
+    fetchAll();
   };
 
   const handleDelete = async () => {
@@ -182,12 +225,18 @@ export function EventCalendar() {
     const { error } = await supabase.from("eventos").delete().eq("id", editingEvento.id);
     setDeleting(false);
     if (error) { toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" }); }
-    else { toast({ title: "Evento excluído" }); setDialogOpen(false); fetchEventos(); }
+    else {
+      if (user) logAudit(user.id, fullName, `Excluiu evento "${editingEvento.titulo}"`, "Calendário");
+      toast({ title: "Evento excluído" });
+      setDialogOpen(false);
+      fetchAll();
+    }
   };
 
   const canEditOrDelete = editingEvento && (editingEvento.criado_por === user?.id);
 
   const selectedDayEvts = selectedDay ? (eventsByDay.get(selectedDay) || []) : [];
+  const selectedDayRe = selectedDay ? (reunioesByDay.get(selectedDay) || []) : [];
 
   return (
     <>
@@ -217,7 +266,9 @@ export function EventCalendar() {
               const dayStr = day ? `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}` : "";
               const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
               const dayEvts = dayStr ? (eventsByDay.get(dayStr) || []) : [];
+              const dayRe = dayStr ? (reunioesByDay.get(dayStr) || []) : [];
               const isSelected = dayStr === selectedDay;
+              const totalItems = dayEvts.length + dayRe.length;
 
               return (
                 <div
@@ -237,13 +288,13 @@ export function EventCalendar() {
                         `}>{day}</span>
                         <button
                           onClick={(e) => { e.stopPropagation(); openNew(dayStr); }}
-                          className="opacity-0 hover:opacity-100 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity p-0.5 rounded"
+                          className="opacity-0 hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity p-0.5 rounded"
                           style={{ opacity: isSelected ? 1 : undefined }}
                         >
                           <Plus className="h-3 w-3" />
                         </button>
                       </div>
-                      {dayEvts.slice(0, 3).map((e) => (
+                      {dayEvts.slice(0, 2).map((e) => (
                         <div
                           key={e.id}
                           onClick={(ev) => openEdit(e, ev)}
@@ -253,8 +304,18 @@ export function EventCalendar() {
                           {!e.dia_todo && e.hora_inicio ? `${e.hora_inicio.slice(0, 5)} ` : ""}{e.titulo}
                         </div>
                       ))}
-                      {dayEvts.length > 3 && (
-                        <span className="text-[10px] text-muted-foreground pl-1">+{dayEvts.length - 3}</span>
+                      {dayRe.slice(0, 1).map((r) => (
+                        <div
+                          key={r.id}
+                          onClick={(ev) => { ev.stopPropagation(); navigate(`/meus-one-on-one/${r.id}`); }}
+                          className={`text-[10px] leading-tight px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 ${REUNIAO_COLOR}`}
+                          title={r.titulo}
+                        >
+                          👥 {r.titulo}
+                        </div>
+                      ))}
+                      {totalItems > 3 && (
+                        <span className="text-[10px] text-muted-foreground pl-1">+{totalItems - 3}</span>
                       )}
                     </>
                   )}
@@ -274,10 +335,23 @@ export function EventCalendar() {
                   <Plus className="h-3 w-3 mr-1" /> Novo evento
                 </Button>
               </div>
-              {selectedDayEvts.length === 0 ? (
+              {selectedDayEvts.length === 0 && selectedDayRe.length === 0 ? (
                 <p className="text-xs text-muted-foreground">Nenhum evento. Clique em "Novo evento" para adicionar.</p>
               ) : (
                 <div className="space-y-2">
+                  {selectedDayRe.map((r) => (
+                    <div
+                      key={r.id}
+                      className={`flex items-center justify-between gap-2 p-2 rounded-md border ${REUNIAO_COLOR} cursor-pointer hover:opacity-80`}
+                      onClick={() => navigate(`/meus-one-on-one/${r.id}`)}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Users className="h-3.5 w-3.5 shrink-0" />
+                        <p className="text-sm font-medium truncate">{r.titulo}</p>
+                      </div>
+                      <span className="text-[10px] opacity-60 shrink-0">ver reunião →</span>
+                    </div>
+                  ))}
                   {selectedDayEvts.map((e) => (
                     <div key={e.id} className={`flex items-start justify-between gap-2 p-2 rounded-md border ${colorForEvent(e.id)}`}>
                       <div className="min-w-0">

@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
-import { Lightbulb, MessageSquare, Check } from "lucide-react";
+import { Lightbulb, MessageSquare, Check, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { logAudit } from "@/lib/auditLog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,11 +31,14 @@ function formatDate(iso: string) {
 }
 
 const Sugestoes = () => {
+  const { user } = useAuth();
+  const { fullName } = useProfile();
   const [items, setItems] = useState<Sugestao[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Sugestao | null>(null);
   const [resposta, setResposta] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -52,19 +58,37 @@ const Sugestoes = () => {
   };
 
   const handleSaveResposta = async () => {
-    if (!selected) return;
+    if (!selected || !user) return;
     setSaving(true);
+    const now = new Date().toISOString();
     const { error } = await supabase
       .from("sugestoes")
-      .update({ resposta: resposta.trim() || null, respondido_em: resposta.trim() ? new Date().toISOString() : null })
+      .update({
+        resposta: resposta.trim() || null,
+        respondido_em: resposta.trim() ? now : null,
+      })
       .eq("id", selected.id);
     setSaving(false);
     if (error) { toast.error("Erro ao salvar resposta."); return; }
+    logAudit(user.id, fullName, `Respondeu sugestão de ${selected.anonima ? "Anônimo" : (selected.autor_nome || "—")}`, "Sugestões");
     toast.success("Resposta salva.");
-    setItems((prev) => prev.map((s) => s.id === selected.id
-      ? { ...s, resposta: resposta.trim() || null, respondido_em: resposta.trim() ? new Date().toISOString() : null }
-      : s
+    setItems((prev) => prev.map((s) =>
+      s.id === selected.id
+        ? { ...s, resposta: resposta.trim() || null, respondido_em: resposta.trim() ? now : null }
+        : s
     ));
+    setSelected(null);
+  };
+
+  const handleDelete = async () => {
+    if (!selected || !user) return;
+    setDeleting(true);
+    const { error } = await supabase.from("sugestoes").delete().eq("id", selected.id);
+    setDeleting(false);
+    if (error) { toast.error("Erro ao excluir sugestão."); return; }
+    logAudit(user.id, fullName, `Excluiu sugestão de ${selected.anonima ? "Anônimo" : (selected.autor_nome || "—")}`, "Sugestões");
+    toast.success("Sugestão excluída.");
+    setItems((prev) => prev.filter((s) => s.id !== selected.id));
     setSelected(null);
   };
 
@@ -74,7 +98,7 @@ const Sugestoes = () => {
         <Lightbulb className="h-7 w-7 text-primary" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">Sugestões</h1>
-          <p className="text-sm text-muted-foreground">Clique em uma sugestão para responder.</p>
+          <p className="text-sm text-muted-foreground">Clique em uma sugestão para responder ou excluir.</p>
         </div>
       </div>
 
@@ -144,9 +168,19 @@ const Sugestoes = () => {
               </div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="flex-wrap gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={deleting || saving}
+              onClick={handleDelete}
+              className="mr-auto"
+            >
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              {deleting ? "Excluindo..." : "Excluir"}
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setSelected(null)}>Fechar</Button>
-            <Button size="sm" disabled={saving} onClick={handleSaveResposta}>
+            <Button size="sm" disabled={saving || deleting} onClick={handleSaveResposta}>
               {saving ? "Salvando..." : "Salvar resposta"}
             </Button>
           </DialogFooter>

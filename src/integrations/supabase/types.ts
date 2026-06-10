@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      auditoria: {
+        Row: {
+          id: string
+          user_id: string | null
+          user_nome: string | null
+          acao: string
+          modulo: string
+          detalhes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          user_nome?: string | null
+          acao: string
+          modulo: string
+          detalhes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          user_nome?: string | null
+          acao?: string
+          modulo?: string
+          detalhes?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       avisos: {
         Row: {
           id: string

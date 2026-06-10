@@ -18,13 +18,26 @@ export function useProfile() {
       .select("full_name, avatar_url")
       .eq("id", user.id)
       .maybeSingle()
-      .then(({ data }) => setProfile(data ?? null));
+      .then(({ data, error }) => {
+        if (!error) {
+          setProfile(data ?? null);
+        } else {
+          // avatar_url column may not exist yet — fallback to name only
+          supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", user.id)
+            .maybeSingle()
+            .then(({ data: d2 }) => {
+              setProfile(d2 ? { full_name: d2.full_name, avatar_url: null } : null);
+            });
+        }
+      });
   }, [user]);
 
   const fullName =
     profile?.full_name ||
     user?.user_metadata?.full_name ||
-    user?.email ||
     "Usuário";
 
   const firstName = fullName.split(" ")[0];
