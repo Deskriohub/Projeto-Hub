@@ -166,6 +166,16 @@ const OneOnOne = () => {
     });
   }, [records, filterLiderado, filterMes, filterPendencias]);
 
+  const pendStats = useMemo(() => {
+    const liderados = new Set<string>();
+    let itens = 0;
+    records.forEach((r) => {
+      const pend = r.todos.filter((t) => !t.concluido).length;
+      if (pend > 0) { liderados.add(r.liderado_id); itens += pend; }
+    });
+    return { liderados: liderados.size, itens };
+  }, [records]);
+
   const handleToggleTodo = async (recordId: string, todoId: string, current: boolean) => {
     const newVal = !current;
     let nome: string | null = null;
@@ -269,6 +279,23 @@ const OneOnOne = () => {
       </div>
 
       <BulkOneOnOneDialog open={bulkOpen} onClose={() => setBulkOpen(false)} onCreated={reload} />
+
+      {pendStats.itens > 0 && (
+        <button
+          onClick={() => setFilterPendencias("pending")}
+          className="w-full sm:w-auto mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-left hover:bg-amber-100/70 transition-colors"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-200 text-amber-800 font-bold">
+            {pendStats.liderados}
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-amber-900">
+              {pendStats.liderados} {pendStats.liderados === 1 ? "liderado com itens em aberto" : "liderados com itens em aberto"}
+            </p>
+            <p className="text-xs text-amber-700">{pendStats.itens} próximo(s) passo(s) pendente(s) · clique para filtrar</p>
+          </div>
+        </button>
+      )}
 
       <div className="mb-6 rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
         <p>📋 <strong className="text-foreground">Como acompanhar:</strong> cada card é um 1:1 de um liderado. Os cards <span className="text-amber-700 font-medium">amarelos</span> têm próximos passos <strong className="text-foreground">pendentes</strong>.</p>
