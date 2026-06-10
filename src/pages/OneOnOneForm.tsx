@@ -462,7 +462,13 @@ const OneOnOneForm = () => {
           </div>
 
           <div>
-            <Label className="mb-2 block">Próximos Passos</Label>
+            <Label className="mb-1 block">Próximos Passos</Label>
+            <div className="mb-3 rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+              <p>📋 São os <strong className="text-foreground">combinados que saem da reunião</strong> — o que cada um vai fazer até o próximo encontro.</p>
+              <p>👤 Em cada item, escolha o <strong className="text-foreground">Responsável</strong>: <strong>Líder</strong> (gestor) ou <strong>Liderado</strong> (funcionário).</p>
+              <p>✅ Quem é responsável marca como concluído depois — fica registrado <strong className="text-foreground">quem fez e quando</strong>. O liderado acompanha em "Minhas Reuniões".</p>
+              <p>🕓 Pode preencher <strong className="text-foreground">durante ou depois</strong> da reunião (é só editar o 1:1). Ao agendar, pode deixar vazio.</p>
+            </div>
             {!readOnly && (
               <div className="flex gap-2 mb-3">
                 <Input
