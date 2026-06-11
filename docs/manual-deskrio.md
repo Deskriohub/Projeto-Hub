@@ -187,10 +187,6 @@ Para admin, também:
 - Acesso à Base de Conhecimento da IA.
 - **Auditoria**: registro das últimas 100 ações realizadas na plataforma (feedbacks, sugestões, respostas a sugestões, eventos, avisos, fotos, mudanças de perfil, 1:1, etc.). Cada registro é clicável e mostra o histórico de Antes e Depois da mudança. Os registros de One-on-One seguem a regra de times: um admin vê só os do próprio time; o Dono da plataforma vê todos. A auditoria registra apenas ações feitas pelos usuários na interface, não mudanças diretas no banco de dados.
 
-## Relatórios (Admin)
-
-Exibe dashboards do Power BI integrados à plataforma. Novos relatórios são configurados pelo time de TI/admin.
-
 ## Ajuda
 
 A "Central de Ajuda" (menu Recursos) traz este guia de funcionalidades organizado por seção, com passo a passo, adaptado ao perfil de quem acessa.

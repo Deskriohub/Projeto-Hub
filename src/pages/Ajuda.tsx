@@ -1,4 +1,4 @@
-import { HelpCircle, Home, Smile, MessageCircle, CalendarRange, Lightbulb, Bot, Megaphone, BarChart3, Users, Settings, Bell, CalendarPlus, BookOpen } from "lucide-react";
+import { HelpCircle, Home, Smile, MessageCircle, CalendarRange, Lightbulb, Bot, Megaphone, Users, Settings, Bell, CalendarPlus, BookOpen } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion, AccordionContent, AccordionItem, AccordionTrigger,
@@ -332,21 +332,6 @@ const ADMIN_SECTIONS: Section[] = [
           "Registra as últimas 100 ações na plataforma (feedbacks, sugestões, eventos, avisos, fotos, perfis…).",
           "Clique em qualquer registro para ver o histórico de Antes e Depois da mudança.",
           "Não registra ações no banco — só o que os usuários fazem na interface.",
-        ],
-      },
-    ],
-  },
-  {
-    id: "relatorios",
-    icon: BarChart3,
-    title: "Relatórios (Admin)",
-    badge: "Admin",
-    content: [
-      {
-        subtitle: "Dashboards",
-        steps: [
-          "Exibe dashboards do Power BI integrados à plataforma.",
-          "Novos relatórios são configurados pelo time de TI/admin.",
         ],
       },
     ],

@@ -14,7 +14,6 @@ import Unauthorized from "./pages/Unauthorized.tsx";
 
 // Páginas carregadas sob demanda (code-splitting) — deixa o app inicial mais leve
 const Index = lazy(() => import("./pages/Index.tsx"));
-const Relatorios = lazy(() => import("./pages/Relatorios.tsx"));
 const Assistente = lazy(() => import("./pages/Assistente.tsx"));
 const Usuarios = lazy(() => import("./pages/Usuarios.tsx"));
 const OneOnOne = lazy(() => import("./pages/OneOnOne.tsx"));
@@ -59,7 +58,6 @@ const App = () => (
                   <Suspense fallback={<PageLoader />}>
                     <Routes>
                       <Route path="/" element={<Index />} />
-                      <Route path="/relatorios" element={<Relatorios />} />
                       <Route path="/assistente" element={<Assistente />} />
                       <Route path="/usuarios" element={<Usuarios />} />
                       <Route path="/one-on-one" element={<OneOnOne />} />

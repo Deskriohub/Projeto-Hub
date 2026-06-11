@@ -14,7 +14,6 @@ export const ROLE_LABELS: Record<string, string> = {
 
 export const ROUTE_PERMISSIONS: Record<string, AppRole> = {
   "/": "geral",
-  "/relatorios": "admin",
   "/assistente": "geral",
   "/usuarios": "admin",
   "/one-on-one": "admin",
@@ -33,7 +32,6 @@ export const ROUTE_PERMISSIONS: Record<string, AppRole> = {
 
 export const NAV_PERMISSIONS: Record<string, AppRole> = {
   "/": "geral",
-  "/relatorios": "admin",
   "/assistente": "geral",
   "/usuarios": "admin",
   "/one-on-one": "admin",
