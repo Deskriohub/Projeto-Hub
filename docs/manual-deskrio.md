@@ -136,7 +136,9 @@ Criar um aviso (admin):
 4. "Enviar para": "Todos" (empresa inteira) ou "Pessoas específicas". Em "Pessoas específicas", a lista mostra apenas as pessoas do time do admin (o Dono vê todos); só os destinatários veem o aviso no mural e no calendário, e são notificados.
 5. Publicar.
 
-O criador sempre vê o próprio aviso no mural. Quando um aviso atinge a data de fim, quem o criou é notificado de que ele saiu do mural.
+Quando o aviso é direcionado a pessoas específicas, a privacidade é garantida pelo banco (RLS): apenas os marcados, o criador e o Dono conseguem ver e receber a notificação — ninguém mais, nem outros admins.
+
+No mural e no calendário, clicar no aviso abre os detalhes (título, descrição e link). O criador sempre vê o próprio aviso no mural. Quando um aviso atinge a data de fim, quem o criou é notificado de que ele saiu do mural.
 
 ## Sugestões
 
@@ -179,7 +181,7 @@ Disponível para todos:
 - Foto de perfil: "Alterar foto" (JPG, PNG ou WebP, até 5MB).
 - Alterar senha: nova senha com no mínimo 6 caracteres.
 
-Configurações está disponível para todos os perfis (o usuário comum vê só Foto e Senha).
+Configurações está disponível para todos os perfis (o usuário comum vê só Foto e Senha). No menu, o admin acessa em "Administração"; o usuário comum acessa em "Recursos".
 
 Para admin, também:
 - Acesso à Base de Conhecimento da IA.

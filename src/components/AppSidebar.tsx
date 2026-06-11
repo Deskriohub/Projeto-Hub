@@ -75,12 +75,14 @@ export function AppSidebar() {
     { title: "Eventos", url: "/eventos", icon: CalendarPlus },
     { title: "Deskinho", url: "/assistente", icon: Bot },
     { title: "Ajuda", url: "/ajuda", icon: HelpCircle },
-    { title: "Configurações", url: "/configuracoes", icon: Settings },
+    // Usuário comum acessa Configurações por aqui (admin tem em "Administração")
+    ...(role === "admin" ? [] : [{ title: "Configurações", url: "/configuracoes", icon: Settings }]),
   ];
 
   const adminItems: SimpleNavItem[] = [
     { title: "Usuários", url: "/usuarios", icon: Users },
     { title: "Sugestões", url: "/sugestoes", icon: Lightbulb },
+    { title: "Configurações", url: "/configuracoes", icon: Settings },
   ];
 
   const visibleInicio = inicioItems.filter((i) => canSee(i.url));

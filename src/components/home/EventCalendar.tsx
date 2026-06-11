@@ -2,13 +2,14 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Users, Lock, Pencil } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CalendarDays, ChevronLeft, ChevronRight, Plus, Users, Lock, Pencil, Megaphone, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { EventoDialog, Evento } from "@/components/EventoDialog";
 
 interface ReuniaoItem { id: string; titulo: string; data: string; hora: string | null; }
-interface AvisoItem { id: string; titulo: string; data: string; link: string | null; }
+interface AvisoItem { id: string; titulo: string; data: string; link: string | null; observacao: string | null; }
 
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
@@ -44,6 +45,7 @@ export function EventCalendar() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvento, setEditingEvento] = useState<Evento | null>(null);
   const [newDate, setNewDate] = useState<string | undefined>(undefined);
+  const [avisoSel, setAvisoSel] = useState<AvisoItem | null>(null);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -94,7 +96,7 @@ export function EventCalendar() {
         (a) => a.data_inicio && a.data_inicio >= startOfMonth && a.data_inicio <= endOfMonth
           && (!a.destinatarios || a.destinatarios.length === 0 || a.destinatarios.includes(user.id) || a.created_by === user.id)
       );
-      setAvisos(comData.map((a) => ({ id: a.id, titulo: a.titulo, data: a.data_inicio, link: a.link ?? null })));
+      setAvisos(comData.map((a) => ({ id: a.id, titulo: a.titulo, data: a.data_inicio, link: a.link ?? null, observacao: a.observacao ?? null })));
     }
   }, [year, month, user?.id]);
 
@@ -196,7 +198,7 @@ export function EventCalendar() {
                         </div>
                       ))}
                       {dayAv.slice(0, 1).map((a) => (
-                        <div key={a.id} onClick={(ev) => { ev.stopPropagation(); setSelectedDay(dayStr); }}
+                        <div key={a.id} onClick={(ev) => { ev.stopPropagation(); setAvisoSel(a); }}
                           className={`text-[10px] leading-tight px-1 py-0.5 rounded border truncate cursor-pointer hover:opacity-80 ${AVISO_COLOR}`} title={a.titulo}>
                           📢 {a.titulo}
                         </div>
@@ -224,14 +226,13 @@ export function EventCalendar() {
               ) : (
                 <div className="space-y-2">
                   {selectedDayAv.map((a) => (
-                    <div key={a.id} className={`flex items-center justify-between gap-2 p-2 rounded-md border ${AVISO_COLOR}`}>
+                    <div key={a.id} onClick={() => setAvisoSel(a)}
+                      className={`flex items-center justify-between gap-2 p-2 rounded-md border cursor-pointer hover:opacity-90 ${AVISO_COLOR}`}>
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="shrink-0">📢</span>
                         <p className="text-sm font-medium truncate">{a.titulo}</p>
                       </div>
-                      {a.link && (
-                        <a href={a.link} target="_blank" rel="noopener noreferrer" className="text-[10px] underline shrink-0" onClick={(e) => e.stopPropagation()}>abrir →</a>
-                      )}
+                      <span className="text-[10px] opacity-60 shrink-0">ver aviso →</span>
                     </div>
                   ))}
                   {selectedDayRe.map((r) => (
@@ -274,6 +275,29 @@ export function EventCalendar() {
         defaultDate={newDate}
         onSaved={fetchAll}
       />
+
+      <Dialog open={!!avisoSel} onOpenChange={(o) => !o && setAvisoSel(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Megaphone className="h-5 w-5 text-primary" /> {avisoSel?.titulo}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {avisoSel?.observacao ? (
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">{avisoSel.observacao}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Sem descrição adicional.</p>
+            )}
+            {avisoSel?.link && (
+              <a href={avisoSel.link} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline font-medium">
+                <ExternalLink className="h-4 w-4" /> Abrir link
+              </a>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
