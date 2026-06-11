@@ -1,10 +1,10 @@
 import {
-  Home, BarChart3, Bot, Users, Smile,
+  Home, Bot, Users, Smile,
   CalendarRange, Lightbulb, Settings, ChevronDown, Megaphone, HelpCircle, CalendarPlus, type LucideIcon
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import deskrioLogo from "@/assets/deskrio-logo.png";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { NAV_PERMISSIONS, hasMinRole } from "@/config/permissions";
 import type { AppRole } from "@/config/permissions";
@@ -16,32 +16,15 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 
-interface SidebarReport { name: string; url?: string; reportId?: string; workspaceId?: string; isPaginated?: boolean; }
-
-const dashboardsDeskRio: SidebarReport[] = [];
-
-function buildReportUrl(report: SidebarReport): string {
-  const params = new URLSearchParams();
-  params.set("name", report.name);
-  if (report.reportId) params.set("reportId", report.reportId);
-  if (report.workspaceId) params.set("workspaceId", report.workspaceId);
-  if (report.url) params.set("url", report.url);
-  if (report.isPaginated) params.set("isPaginated", "true");
-  return `/relatorios?${params.toString()}`;
-}
-
 interface SimpleNavItem { title: string; url: string; icon: LucideIcon; minRole?: AppRole; }
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const navigate = useNavigate();
   const { role } = useUserRole();
 
   const isActive = (path: string) => location.pathname === path;
-  const isRelatoriosActive = location.pathname === "/relatorios";
-  const currentReportId = new URLSearchParams(location.search).get("reportId");
   const canSee = (url: string) => { const r = NAV_PERMISSIONS[url]; return !r || hasMinRole(role, r); };
 
   const renderSimpleItem = (item: SimpleNavItem) => {
@@ -151,40 +134,6 @@ export function AppSidebar() {
             <SidebarGroupContent><SidebarMenu>{visibleInicio.map(renderSimpleItem)}</SidebarMenu></SidebarGroupContent>
           </SidebarGroup>
         )}
-
-        {/* Gestão — Relatórios Power BI (preencher com os do DeskRio) */}
-        <SidebarGroup>
-          {!collapsed && <SidebarGroupLabel>Gestão</SidebarGroupLabel>}
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isRelatoriosActive} tooltip="Relatórios">
-                  <NavLink to="/relatorios" end
-                    className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-                    activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold">
-                    <BarChart3 className="h-5 w-5" />
-                    {!collapsed && <span>Relatórios</span>}
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              {dashboardsDeskRio.length === 0 && !collapsed && (
-                <SidebarMenuItem>
-                  <span className="pl-9 text-xs text-sidebar-foreground/40 italic">Em Breve</span>
-                </SidebarMenuItem>
-              )}
-              {dashboardsDeskRio.map((report) => (
-                <SidebarMenuItem key={report.name}>
-                  <SidebarMenuButton
-                    isActive={isRelatoriosActive && report.reportId === currentReportId}
-                    onClick={() => navigate(buildReportUrl(report))}
-                    className="text-sidebar-foreground/60 hover:text-sidebar-foreground cursor-pointer pl-9">
-                    {!collapsed && <span>{report.name}</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
         {/* Pessoas & Performance — só Mural + 1:1 */}
         <SidebarGroup>
