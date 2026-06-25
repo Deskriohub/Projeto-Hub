@@ -2,10 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
-  Bold,
-  Italic,
-  List,
-  Smile,
   Save,
   Plus,
   Trash2,
@@ -18,7 +14,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { OneOnOneTodoRow } from "@/components/OneOnOneTodoCheck";
@@ -47,13 +42,12 @@ import { useProfile } from "@/hooks/useProfile";
 import { useTeamProfiles } from "@/hooks/useTeamProfiles";
 import { gerarDatasMensais } from "@/lib/recorrencia";
 import OneOnOneComentarios from "@/components/OneOnOneComentarios";
+import OneOnOneAnotacoes from "@/components/OneOnOneAnotacoes";
 
 function fmtDataBR(d: string) {
   const [y, m, dd] = d.split("-");
   return `${dd}/${m}/${y}`;
 }
-
-const EMOJIS = ["🌟", "💪", "🤝", "🎯", "🚀", "💡", "❤️", "🏆", "👏", "😊"];
 
 interface Profile {
   id: string;
@@ -107,7 +101,6 @@ const OneOnOneForm = () => {
   const [hora, setHora] = useState<string>("");
   const [repetir, setRepetir] = useState<boolean>(false);
   const [meses, setMeses] = useState<number>(3);
-  const [anotacoes, setAnotacoes] = useState<string>("");
   const [todos, setTodos] = useState<Todo[]>([]);
   const [novoTodo, setNovoTodo] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -116,7 +109,6 @@ const OneOnOneForm = () => {
   const [gestorId, setGestorId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const origDataRef = useRef<string>("");
   const origHoraRef = useRef<string>("");
 
@@ -127,7 +119,7 @@ const OneOnOneForm = () => {
         setLoading(true);
         const { data: rec, error } = await supabase
           .from("one_on_one")
-          .select("liderado_id, data_reuniao, hora_reuniao, anotacoes, gestor_id")
+          .select("liderado_id, data_reuniao, hora_reuniao, gestor_id")
           .eq("id", id)
           .maybeSingle();
         if (error || !rec) {
@@ -139,7 +131,6 @@ const OneOnOneForm = () => {
         setLiderado(rec.liderado_id);
         setData(rec.data_reuniao);
         setHora((rec.hora_reuniao as string | null)?.slice(0, 5) || "");
-        setAnotacoes(rec.anotacoes || "");
         origDataRef.current = rec.data_reuniao;
         origHoraRef.current = (rec.hora_reuniao as string | null)?.slice(0, 5) || "";
 
@@ -168,43 +159,6 @@ const OneOnOneForm = () => {
   }, [liderado, profiles]);
 
   const readOnly = !editMode;
-
-  const insertAtCursor = (before: string, after: string = "") => {
-    const ta = textareaRef.current;
-    if (!ta) {
-      setAnotacoes((prev) => prev + before + after);
-      return;
-    }
-    const start = ta.selectionStart ?? anotacoes.length;
-    const end = ta.selectionEnd ?? anotacoes.length;
-    const selected = anotacoes.slice(start, end);
-    const next = anotacoes.slice(0, start) + before + selected + after + anotacoes.slice(end);
-    setAnotacoes(next);
-    requestAnimationFrame(() => {
-      ta.focus();
-      const pos = start + before.length + selected.length + after.length;
-      ta.setSelectionRange(pos, pos);
-    });
-  };
-
-  const insertList = () => {
-    const ta = textareaRef.current;
-    if (!ta) {
-      setAnotacoes((p) => p + "\n- ");
-      return;
-    }
-    const start = ta.selectionStart ?? anotacoes.length;
-    const before = anotacoes.slice(0, start);
-    const needsNewline = before.length > 0 && !before.endsWith("\n");
-    const insert = (needsNewline ? "\n" : "") + "- ";
-    const next = before + insert + anotacoes.slice(start);
-    setAnotacoes(next);
-    requestAnimationFrame(() => {
-      ta.focus();
-      const pos = start + insert.length;
-      ta.setSelectionRange(pos, pos);
-    });
-  };
 
   const handleAddTodo = () => {
     const t = novoTodo.trim();
@@ -296,7 +250,6 @@ const OneOnOneForm = () => {
           liderado_nome,
           data_reuniao: data,
           hora_reuniao: hora || null,
-          anotacoes,
           updated_at: new Date().toISOString(),
         })
         .eq("id", recordId);
@@ -328,7 +281,6 @@ const OneOnOneForm = () => {
           liderado_nome,
           data_reuniao: data,
           hora_reuniao: hora || null,
-          anotacoes,
         })
         .select("id")
         .single();
@@ -354,7 +306,6 @@ const OneOnOneForm = () => {
             liderado_nome,
             data_reuniao: d,
             hora_reuniao: hora || null,
-            anotacoes: "",
           }))
         );
       }
@@ -525,45 +476,12 @@ const OneOnOneForm = () => {
             </div>
           )}
 
-          <div>
-            <Label htmlFor="anotacoes" className="mb-2 block">Anotações</Label>
-            {!readOnly && (
-              <div className="flex flex-wrap items-center gap-1 mb-2 rounded-md border border-border bg-muted/30 p-1">
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => insertAtCursor("**", "**")} aria-label="Negrito">
-                  <Bold className="h-4 w-4" />
-                </Button>
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => insertAtCursor("*", "*")} aria-label="Itálico">
-                  <Italic className="h-4 w-4" />
-                </Button>
-                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={insertList} aria-label="Lista">
-                  <List className="h-4 w-4" />
-                </Button>
-                <div className="w-px h-6 bg-border mx-1" />
-                <Smile className="h-4 w-4 text-muted-foreground ml-1" />
-                {EMOJIS.map((e) => (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => insertAtCursor(e)}
-                    className="h-8 w-8 rounded text-lg hover:bg-accent/40 transition-all"
-                    aria-label={`Inserir ${e}`}
-                  >
-                    {e}
-                  </button>
-                ))}
-              </div>
-            )}
-            <Textarea
-              id="anotacoes"
-              ref={textareaRef}
-              value={anotacoes}
-              onChange={(e) => setAnotacoes(e.target.value)}
-              placeholder="Escreva suas anotações da reunião..."
-              className="min-h-[300px] font-mono text-sm"
-              readOnly={readOnly}
-              disabled={readOnly}
-            />
-          </div>
+          {!isEdit && (
+            <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
+              📝 As <strong className="text-foreground">anotações</strong> agora pertencem ao liderado. Depois de salvar este 1:1,
+              você poderá puxar as anotações dele do período e marcar quais entram na pauta — ou criar novas aqui mesmo.
+            </div>
+          )}
 
           <div>
             <Label className="mb-1 block">Próximos Passos</Label>
@@ -651,6 +569,18 @@ const OneOnOneForm = () => {
               </Button>
             </div>
           )}
+        </div>
+      )}
+
+      {isEdit && id && liderado && (
+        <div className="mt-6">
+          <OneOnOneAnotacoes
+            oneOnOneId={id}
+            lideradoId={liderado}
+            lideradoNome={liderado_nome}
+            dataReuniao={data}
+            canEdit={!isLiderado && (isAdmin || gestorId === user?.id)}
+          />
         </div>
       )}
 

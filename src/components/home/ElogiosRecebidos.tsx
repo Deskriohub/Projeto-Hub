@@ -6,17 +6,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ElogioAnexo } from "@/components/elogios/ElogioAnexo";
+import { categoriaDisplay } from "@/lib/elogios";
 
 interface Elogio {
   id: string;
   created_at: string;
   remetente_id: string;
-  destinatario_id: string;
+  destinatario_id: string | null;
   remetente_nome: string;
-  destinatario_nome: string;
-  mensagem: string;
+  destinatario_nome: string | null;
+  mensagem: string | null;
   emoji: string;
   publico: boolean;
+  origem: string;
+  cliente_nome: string | null;
+  categoria: string | null;
+  categoria_detalhe: string | null;
+  anexo_url: string | null;
+  anexo_tipo: string | null;
+  anexo_nome: string | null;
 }
 
 function getInitials(name: string): string {
@@ -40,7 +49,7 @@ export const ElogiosRecebidos = () => {
       setLoaded(false);
       let query = supabase
         .from("elogios")
-        .select("id, created_at, remetente_id, destinatario_id, remetente_nome, destinatario_nome, mensagem, emoji, publico");
+        .select("id, created_at, remetente_id, destinatario_id, remetente_nome, destinatario_nome, mensagem, emoji, publico, origem, cliente_nome, categoria, categoria_detalhe, anexo_url, anexo_tipo, anexo_nome");
       if (view === "recebidos") {
         query = query.eq("destinatario_id", user.id);
       } else {
@@ -104,21 +113,39 @@ export const ElogiosRecebidos = () => {
             onClick={() => setSelected(el)}
             className="flex items-start gap-3 rounded-lg border border-border/60 bg-background/50 p-3 text-left hover:bg-accent/30 transition-colors"
           >
-            <div className="text-2xl shrink-0">{el.emoji}</div>
+            <div className="text-2xl shrink-0">{el.origem === "cliente" ? "💬" : el.emoji}</div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap text-sm">
-                {miniAvatar(el.remetente_id, el.remetente_nome)}
-                <span className="font-semibold text-foreground">{el.remetente_nome}</span>
-                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                {miniAvatar(el.destinatario_id, el.destinatario_nome)}
-                <span className="font-semibold text-foreground">{el.destinatario_nome}</span>
+                {el.origem === "cliente" ? (
+                  <>
+                    <span className="font-semibold text-foreground">Cliente: {el.cliente_nome || "—"}</span>
+                    <Badge variant="outline" className="text-xs">{categoriaDisplay(el.categoria, el.categoria_detalhe)}</Badge>
+                    {el.destinatario_nome && (
+                      <>
+                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-semibold text-foreground">{el.destinatario_nome}</span>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {miniAvatar(el.remetente_id, el.remetente_nome)}
+                    <span className="font-semibold text-foreground">{el.remetente_nome}</span>
+                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                    {miniAvatar(el.destinatario_id ?? "", el.destinatario_nome ?? "")}
+                    <span className="font-semibold text-foreground">{el.destinatario_nome}</span>
+                  </>
+                )}
                 {!el.publico && (
                   <Badge variant="secondary" className="text-xs">
                     <Lock className="h-3 w-3 mr-1" /> Privado
                   </Badge>
                 )}
               </div>
-              <p className="text-sm text-foreground mt-1 break-words whitespace-pre-wrap line-clamp-2">{el.mensagem}</p>
+              {el.mensagem && <p className="text-sm text-foreground mt-1 break-words whitespace-pre-wrap line-clamp-2">{el.mensagem}</p>}
+              {el.origem === "cliente" && el.anexo_url && (
+                <p className="text-xs text-primary mt-1">📎 {el.anexo_tipo === "imagem" ? "Imagem" : el.anexo_tipo === "video" ? "Vídeo" : "Áudio"} anexado</p>
+              )}
               <p className="text-xs text-muted-foreground mt-1">
                 {new Date(el.created_at).toLocaleString("pt-BR")}
               </p>
@@ -144,24 +171,35 @@ export const ElogiosRecebidos = () => {
           </DialogHeader>
           {selected && (
             <div className="space-y-4">
-              <div className="flex items-center justify-center gap-4">
-                <div className="flex flex-col items-center gap-1">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={avatarMap[selected.remetente_id] ?? ""} alt={selected.remetente_nome} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">{getInitials(selected.remetente_nome)}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs font-medium text-center">{selected.remetente_nome}</span>
+              {selected.origem === "cliente" ? (
+                <div className="text-center">
+                  <p className="font-semibold text-foreground">Cliente: {selected.cliente_nome || "—"}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {categoriaDisplay(selected.categoria, selected.categoria_detalhe)}
+                    {selected.destinatario_nome ? ` · sobre ${selected.destinatario_nome}` : ""}
+                  </p>
                 </div>
-                <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                <div className="flex flex-col items-center gap-1">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={avatarMap[selected.destinatario_id] ?? ""} alt={selected.destinatario_nome} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">{getInitials(selected.destinatario_nome)}</AvatarFallback>
-                  </Avatar>
-                  <span className="text-xs font-medium text-center">{selected.destinatario_nome}</span>
+              ) : (
+                <div className="flex items-center justify-center gap-4">
+                  <div className="flex flex-col items-center gap-1">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={avatarMap[selected.remetente_id] ?? ""} alt={selected.remetente_nome} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">{getInitials(selected.remetente_nome)}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-medium text-center">{selected.remetente_nome}</span>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex flex-col items-center gap-1">
+                    <Avatar className="h-16 w-16">
+                      <AvatarImage src={avatarMap[selected.destinatario_id ?? ""] ?? ""} alt={selected.destinatario_nome ?? ""} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">{getInitials(selected.destinatario_nome ?? "?")}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-medium text-center">{selected.destinatario_nome}</span>
+                  </div>
                 </div>
-              </div>
-              <p className="text-sm text-foreground whitespace-pre-wrap p-3 bg-muted/40 rounded-md text-center">{selected.mensagem}</p>
+              )}
+              {selected.mensagem && <p className="text-sm text-foreground whitespace-pre-wrap p-3 bg-muted/40 rounded-md text-center">{selected.mensagem}</p>}
+              <ElogioAnexo url={selected.anexo_url} tipo={selected.anexo_tipo} nome={selected.anexo_nome} />
               <p className="text-xs text-muted-foreground text-center">{new Date(selected.created_at).toLocaleString("pt-BR")}</p>
             </div>
           )}

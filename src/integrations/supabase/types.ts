@@ -291,39 +291,101 @@ configuracoes: {
       }
       elogios: {
         Row: {
+          anexo_nome: string | null
+          anexo_tipo: string | null
+          anexo_url: string | null
+          categoria: string | null
+          categoria_detalhe: string | null
+          cliente_nome: string | null
           created_at: string
-          destinatario_id: string
-          destinatario_nome: string
+          destinatario_id: string | null
+          destinatario_nome: string | null
           emoji: string
           id: string
-          mensagem: string
+          mensagem: string | null
+          origem: string
           publico: boolean
           remetente_id: string
           remetente_nome: string
         }
         Insert: {
+          anexo_nome?: string | null
+          anexo_tipo?: string | null
+          anexo_url?: string | null
+          categoria?: string | null
+          categoria_detalhe?: string | null
+          cliente_nome?: string | null
           created_at?: string
-          destinatario_id: string
-          destinatario_nome: string
-          emoji: string
+          destinatario_id?: string | null
+          destinatario_nome?: string | null
+          emoji?: string
           id?: string
-          mensagem: string
+          mensagem?: string | null
+          origem?: string
           publico?: boolean
           remetente_id: string
           remetente_nome: string
         }
         Update: {
+          anexo_nome?: string | null
+          anexo_tipo?: string | null
+          anexo_url?: string | null
+          categoria?: string | null
+          categoria_detalhe?: string | null
+          cliente_nome?: string | null
           created_at?: string
-          destinatario_id?: string
-          destinatario_nome?: string
+          destinatario_id?: string | null
+          destinatario_nome?: string | null
           emoji?: string
           id?: string
-          mensagem?: string
+          mensagem?: string | null
+          origem?: string
           publico?: boolean
           remetente_id?: string
           remetente_nome?: string
         }
         Relationships: []
+      }
+      anotacoes: {
+        Row: {
+          autor_id: string | null
+          conteudo: string | null
+          created_at: string | null
+          data: string
+          id: string
+          liderado_id: string
+          one_on_one_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          autor_id?: string | null
+          conteudo?: string | null
+          created_at?: string | null
+          data?: string
+          id?: string
+          liderado_id: string
+          one_on_one_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          autor_id?: string | null
+          conteudo?: string | null
+          created_at?: string | null
+          data?: string
+          id?: string
+          liderado_id?: string
+          one_on_one_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "anotacoes_one_on_one_id_fkey"
+            columns: ["one_on_one_id"]
+            isOneToOne: false
+            referencedRelation: "one_on_one"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       one_on_one: {
         Row: {

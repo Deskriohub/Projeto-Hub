@@ -86,6 +86,7 @@ const OneOnOne = () => {
   const navigate = useNavigate();
   const [records, setRecords] = useState<OneOnOneRecord[]>([]);
   const [gestorNames, setGestorNames] = useState<Record<string, string>>({});
+  const [anotMap, setAnotMap] = useState<Record<string, { preview: string; count: number }>>({});
   const [loading, setLoading] = useState(true);
   const [filterLiderado, setFilterLiderado] = useState<string>("all");
   const [filterMes, setFilterMes] = useState<string>("all");
@@ -147,6 +148,28 @@ const OneOnOne = () => {
     };
     fetchGestorNames();
   }, [isAdmin, records]);
+
+  // Anotações vinculadas a cada 1:1 (tabela nova). Fallback no texto legado é feito no render.
+  useEffect(() => {
+    const fetchAnotacoes = async () => {
+      if (records.length === 0) return;
+      const ids = records.map((r) => r.id);
+      const { data } = await supabase
+        .from("anotacoes")
+        .select("one_on_one_id, conteudo, data")
+        .in("one_on_one_id", ids)
+        .order("data", { ascending: false });
+      const map: Record<string, { preview: string; count: number }> = {};
+      (data || []).forEach((a) => {
+        if (!a.one_on_one_id) return;
+        const cur = map[a.one_on_one_id];
+        if (!cur) map[a.one_on_one_id] = { preview: (a.conteudo || "").trim(), count: 1 };
+        else cur.count += 1;
+      });
+      setAnotMap(map);
+    };
+    fetchAnotacoes();
+  }, [records]);
 
   const liderados = useMemo(() => {
     const set = new Map<string, string>();
@@ -367,7 +390,8 @@ const OneOnOne = () => {
       ) : (
         <div className="grid gap-3">
           {filtered.map((r) => {
-            const preview = (r.anotacoes || "").trim();
+            const anot = anotMap[r.id];
+            const preview = (anot?.preview || r.anotacoes || "").trim();
             const previewText = preview ? preview.slice(0, 100) + (preview.length > 100 ? "..." : "") : "Sem anotações";
             const total = r.todos.length;
             const done = r.todos.filter((t) => t.concluido).length;

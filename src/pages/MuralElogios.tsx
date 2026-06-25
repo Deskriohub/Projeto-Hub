@@ -10,17 +10,26 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import { ElogioReacoes } from "@/components/elogios/ElogioReacoes";
+import { ElogioAnexo } from "@/components/elogios/ElogioAnexo";
+import { categoriaDisplay } from "@/lib/elogios";
 
 interface Elogio {
   id: string;
   created_at: string;
   remetente_id: string;
   remetente_nome: string;
-  destinatario_id: string;
-  destinatario_nome: string;
-  mensagem: string;
+  destinatario_id: string | null;
+  destinatario_nome: string | null;
+  mensagem: string | null;
   emoji: string;
   publico: boolean;
+  origem: string;
+  cliente_nome: string | null;
+  categoria: string | null;
+  categoria_detalhe: string | null;
+  anexo_url: string | null;
+  anexo_tipo: string | null;
+  anexo_nome: string | null;
 }
 
 interface ProfileAvatar {
@@ -117,31 +126,47 @@ const MuralElogios = () => {
       ) : (
         <div className="grid gap-3">
           {visible.map((el) => {
+            const isCliente = el.origem === "cliente";
             const from = profileMap[el.remetente_id];
-            const to = profileMap[el.destinatario_id];
+            const to = el.destinatario_id ? profileMap[el.destinatario_id] : undefined;
             return (
               <div
                 key={el.id}
                 className="group rounded-xl border border-border bg-card p-5 flex items-start gap-4"
               >
-                <div className="text-3xl shrink-0">{el.emoji}</div>
+                <div className="text-3xl shrink-0">{isCliente ? "💬" : el.emoji}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap text-sm mb-2">
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={from?.url ?? ""} alt={el.remetente_nome} />
-                      <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-semibold">
-                        {from?.initials ?? el.remetente_nome.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-semibold text-foreground">{el.remetente_nome}</span>
-                    <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={to?.url ?? ""} alt={el.destinatario_nome} />
-                      <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-semibold">
-                        {to?.initials ?? el.destinatario_nome.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-semibold text-foreground">{el.destinatario_nome}</span>
+                    {isCliente ? (
+                      <>
+                        <span className="font-semibold text-foreground">Cliente: {el.cliente_nome || "—"}</span>
+                        <Badge variant="outline" className="text-xs">{categoriaDisplay(el.categoria, el.categoria_detalhe)}</Badge>
+                        {el.destinatario_nome && (
+                          <>
+                            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="font-semibold text-foreground">{el.destinatario_nome}</span>
+                          </>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={from?.url ?? ""} alt={el.remetente_nome} />
+                          <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-semibold">
+                            {from?.initials ?? el.remetente_nome.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-semibold text-foreground">{el.remetente_nome}</span>
+                        <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={to?.url ?? ""} alt={el.destinatario_nome ?? ""} />
+                          <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-semibold">
+                            {to?.initials ?? (el.destinatario_nome ?? "?").slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-semibold text-foreground">{el.destinatario_nome}</span>
+                      </>
+                    )}
                     {el.publico ? (
                       <Badge className="text-xs border-transparent bg-purple-600 text-white hover:bg-purple-600/90">
                         Público
@@ -152,7 +177,8 @@ const MuralElogios = () => {
                       </Badge>
                     )}
                   </div>
-                  <p className="text-foreground break-words">{el.mensagem}</p>
+                  {el.mensagem && <p className="text-foreground break-words">{el.mensagem}</p>}
+                  <ElogioAnexo url={el.anexo_url} tipo={el.anexo_tipo} nome={el.anexo_nome} />
                   <p className="text-xs text-muted-foreground mt-2">
                     {new Date(el.created_at).toLocaleString("pt-BR")}
                   </p>

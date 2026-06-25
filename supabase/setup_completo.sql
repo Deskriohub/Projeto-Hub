@@ -45,6 +45,59 @@ CREATE POLICY "delete_eventos" ON public.eventos FOR DELETE USING (criado_por = 
 -- ---------- ONE-ON-ONE ----------
 ALTER TABLE public.one_on_one ADD COLUMN IF NOT EXISTS hora_reuniao time;
 
+-- ---------- ANOTAÇÕES (livres, donas do liderado; 1:1 é opcional) ----------
+-- Detalhes e backfill: migrations/20260624120000_anotacoes_livres.sql
+CREATE TABLE IF NOT EXISTS public.anotacoes (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  liderado_id   uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  autor_id      uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  one_on_one_id uuid REFERENCES public.one_on_one(id) ON DELETE SET NULL,
+  data          date NOT NULL DEFAULT current_date,
+  conteudo      text,
+  created_at    timestamptz DEFAULT now(),
+  updated_at    timestamptz DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_anotacoes_liderado_data ON public.anotacoes (liderado_id, data DESC);
+CREATE INDEX IF NOT EXISTS idx_anotacoes_one_on_one    ON public.anotacoes (one_on_one_id);
+-- Backfill da coluna legada one_on_one.anotacoes (idempotente)
+INSERT INTO public.anotacoes (liderado_id, autor_id, one_on_one_id, data, conteudo, created_at, updated_at)
+SELECT o.liderado_id, o.gestor_id, o.id, o.data_reuniao, o.anotacoes,
+       COALESCE(o.created_at, now()), COALESCE(o.updated_at, now())
+FROM public.one_on_one o
+WHERE o.anotacoes IS NOT NULL AND btrim(o.anotacoes) <> ''
+  AND NOT EXISTS (SELECT 1 FROM public.anotacoes a WHERE a.one_on_one_id = o.id);
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.anotacoes WHERE liderado_id IS NULL) THEN
+    ALTER TABLE public.anotacoes ALTER COLUMN liderado_id SET NOT NULL;
+  END IF;
+END $$;
+ALTER TABLE public.anotacoes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "anotacoes_select" ON public.anotacoes;
+CREATE POLICY "anotacoes_select" ON public.anotacoes FOR SELECT TO authenticated
+USING (
+  public.is_owner(auth.uid())
+  OR autor_id = auth.uid()
+  OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = anotacoes.liderado_id AND p.gestor_id = auth.uid())
+  OR (one_on_one_id IS NOT NULL AND liderado_id = auth.uid())
+);
+DROP POLICY IF EXISTS "anotacoes_insert" ON public.anotacoes;
+CREATE POLICY "anotacoes_insert" ON public.anotacoes FOR INSERT TO authenticated
+WITH CHECK (
+  autor_id = auth.uid()
+  AND (
+    public.is_owner(auth.uid())
+    OR EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = liderado_id AND p.gestor_id = auth.uid())
+  )
+);
+DROP POLICY IF EXISTS "anotacoes_update" ON public.anotacoes;
+CREATE POLICY "anotacoes_update" ON public.anotacoes FOR UPDATE TO authenticated
+USING (autor_id = auth.uid() OR public.is_owner(auth.uid()))
+WITH CHECK (autor_id = auth.uid() OR public.is_owner(auth.uid()));
+DROP POLICY IF EXISTS "anotacoes_delete" ON public.anotacoes;
+CREATE POLICY "anotacoes_delete" ON public.anotacoes FOR DELETE TO authenticated
+USING (autor_id = auth.uid() OR public.is_owner(auth.uid()));
+
 -- ---------- SUGESTOES ----------
 ALTER TABLE public.sugestoes ADD COLUMN IF NOT EXISTS resposta      text;
 ALTER TABLE public.sugestoes ADD COLUMN IF NOT EXISTS respondido_em timestamptz;
@@ -142,10 +195,30 @@ CREATE POLICY "admin_manage_ia_docs" ON public.ia_documentos FOR ALL USING (publ
 DROP POLICY IF EXISTS "admin_update_profiles" ON public.profiles;
 CREATE POLICY "admin_update_profiles" ON public.profiles FOR UPDATE USING (public.has_role(auth.uid(), 'admin'));
 
+-- ---------- ELOGIOS: origem cliente + anexos ----------
+-- Detalhes: migrations/20260624130000_elogios_cliente.sql
+ALTER TABLE public.elogios ADD COLUMN IF NOT EXISTS origem       text NOT NULL DEFAULT 'interno';
+ALTER TABLE public.elogios ADD COLUMN IF NOT EXISTS cliente_nome text;
+ALTER TABLE public.elogios ADD COLUMN IF NOT EXISTS categoria        text;
+ALTER TABLE public.elogios ADD COLUMN IF NOT EXISTS categoria_detalhe text;
+ALTER TABLE public.elogios ADD COLUMN IF NOT EXISTS anexo_url    text;
+ALTER TABLE public.elogios ADD COLUMN IF NOT EXISTS anexo_tipo   text;
+ALTER TABLE public.elogios ADD COLUMN IF NOT EXISTS anexo_nome   text;
+ALTER TABLE public.elogios ALTER COLUMN destinatario_id   DROP NOT NULL;
+ALTER TABLE public.elogios ALTER COLUMN destinatario_nome DROP NOT NULL;
+ALTER TABLE public.elogios ALTER COLUMN mensagem          DROP NOT NULL;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'elogios_origem_chk') THEN
+    ALTER TABLE public.elogios ADD CONSTRAINT elogios_origem_chk CHECK (origem IN ('interno','cliente'));
+  END IF;
+END $$;
+
 -- ---------- STORAGE BUCKETS ----------
 INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true)
   ON CONFLICT (id) DO NOTHING;
 INSERT INTO storage.buckets (id, name, public) VALUES ('documentos', 'documentos', true)
+  ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('elogios', 'elogios', true)
   ON CONFLICT (id) DO NOTHING;
 
 DROP POLICY IF EXISTS "avatar_public_read" ON storage.objects;
@@ -161,6 +234,13 @@ DROP POLICY IF EXISTS "doc_insert" ON storage.objects;
 CREATE POLICY "doc_insert" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'documentos' AND public.has_role(auth.uid(), 'admin'));
 DROP POLICY IF EXISTS "doc_delete" ON storage.objects;
 CREATE POLICY "doc_delete" ON storage.objects FOR DELETE USING (bucket_id = 'documentos' AND public.has_role(auth.uid(), 'admin'));
+
+DROP POLICY IF EXISTS "elogios_anexo_read" ON storage.objects;
+CREATE POLICY "elogios_anexo_read" ON storage.objects FOR SELECT USING (bucket_id = 'elogios');
+DROP POLICY IF EXISTS "elogios_anexo_insert" ON storage.objects;
+CREATE POLICY "elogios_anexo_insert" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'elogios' AND auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "elogios_anexo_delete" ON storage.objects;
+CREATE POLICY "elogios_anexo_delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'elogios' AND auth.uid() IS NOT NULL);
 
 -- ---------- LIMPEZA: remove Contexto da IA (redundante) ----------
 DELETE FROM public.configuracoes WHERE id = 'ia_contexto';

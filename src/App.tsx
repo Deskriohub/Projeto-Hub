@@ -20,6 +20,7 @@ const OneOnOne = lazy(() => import("./pages/OneOnOne.tsx"));
 const OneOnOneForm = lazy(() => import("./pages/OneOnOneForm.tsx"));
 const MeusOneOnOne = lazy(() => import("./pages/MeusOneOnOne.tsx"));
 const MeusOneOnOneView = lazy(() => import("./pages/MeusOneOnOneView.tsx"));
+const Anotacoes = lazy(() => import("./pages/Anotacoes.tsx"));
 const Elogios = lazy(() => import("./pages/Elogios.tsx"));
 const MuralElogios = lazy(() => import("./pages/MuralElogios.tsx"));
 const Sugestoes = lazy(() => import("./pages/Sugestoes.tsx"));
@@ -65,6 +66,7 @@ const App = () => (
                       <Route path="/one-on-one/:id" element={<OneOnOneForm />} />
                       <Route path="/meus-one-on-one" element={<MeusOneOnOne />} />
                       <Route path="/meus-one-on-one/:id" element={<MeusOneOnOneView />} />
+                      <Route path="/anotacoes" element={<Anotacoes />} />
                       <Route path="/elogios" element={<Elogios />} />
                       <Route path="/mural-elogios" element={<MuralElogios />} />
                       <Route path="/sugestoes" element={<Sugestoes />} />

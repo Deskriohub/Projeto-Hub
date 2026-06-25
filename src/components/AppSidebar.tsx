@@ -1,6 +1,6 @@
 import {
   Home, Bot, Users, Smile,
-  CalendarRange, Lightbulb, Settings, ChevronDown, Megaphone, HelpCircle, CalendarPlus, type LucideIcon
+  CalendarRange, Lightbulb, Settings, ChevronDown, Megaphone, HelpCircle, CalendarPlus, NotebookPen, type LucideIcon
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import deskrioLogo from "@/assets/deskrio-logo.png";
@@ -144,6 +144,8 @@ export function AppSidebar() {
               {/* "Minhas Sugestões" só para usuário comum — admin usa "Sugestões" para responder */}
               {role !== "admin" && renderSimpleItem({ title: "Minhas Sugestões", url: "/minhas-sugestoes", icon: Lightbulb })}
               {renderSubMenu("One-on-One", CalendarRange, oneOnOneSubItems, "One-on-One")}
+              {/* Anotações — paralelo ao One-on-One (entrada person-first, não dentro dele) */}
+              {canSee("/anotacoes") && renderSimpleItem({ title: "Anotações", url: "/anotacoes", icon: NotebookPen })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

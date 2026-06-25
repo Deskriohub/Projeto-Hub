@@ -52,15 +52,22 @@ O usuário recebe notificação quando:
 
 ## Mural de Elogios
 
-Espaço para reconhecer colegas publicamente.
+Espaço para reconhecer colegas publicamente **e guardar elogios de clientes**.
 
-Para dar um elogio:
-1. Acessar "Mural de Elogios" e clicar em "Novo Elogio".
-2. Escolher um emoji, selecionar o colega e escrever a mensagem.
-3. Marcar "Público" (todos veem) ou deixar privado.
-4. Enviar.
+Em "Novo Elogio" há duas abas:
 
-Cada card mostra a foto de quem enviou e de quem recebeu. Clicar no card abre com as fotos maiores e a mensagem completa. É possível reagir a elogios de outros com emojis. Quem enviou, quem recebeu ou um admin pode excluir um elogio.
+**De um colega** (reconhecimento interno):
+1. Escolher um emoji, selecionar o colega e escrever a mensagem.
+2. Marcar "Público" (todos veem) ou deixar privado.
+3. Registrar.
+
+**De um cliente** (elogio externo, com mídia):
+1. Informar o **nome do cliente** e a **categoria** (sobre o quê): Colaborador, Atendimento, Produto, Funcionalidade/Plataforma ou Outro.
+2. Se for sobre um colaborador específico, selecionar quem foi elogiado (opcional nas demais categorias).
+3. Escrever a mensagem **e/ou anexar a mídia** do cliente — **print/imagem, vídeo ou áudio** (até 50 MB). A mensagem é opcional quando há anexo.
+4. Marcar Público/Privado e registrar.
+
+No mural, elogios internos mostram a foto de quem enviou e de quem recebeu; elogios de cliente mostram "Cliente: Nome", a categoria e a mídia anexada (imagem/player de vídeo/áudio). Clicar no card abre o detalhe. É possível reagir com emojis. Quem registrou, quem recebeu ou um admin pode excluir.
 
 ## Feedback Pós-1:1
 
@@ -115,12 +122,22 @@ Mostra os 1:1 dos liderados **do time do admin** (cada admin vê apenas o própr
 ### Criar um One-on-One (admin)
 1. Em "Todas as reuniões", clicar em "Novo One-on-One".
 2. Escolher o liderado (a lista mostra só as pessoas do time do admin; o Dono vê todos), a data e a hora.
-3. Escrever as anotações da reunião (com formatação e emojis).
-4. Adicionar os Próximos Passos, definindo o responsável de cada um.
-5. Opcional: marcar "Repetir todo mês" para criar vários encontros mensais de uma vez.
-6. Salvar. O liderado recebe notificação do agendamento e de eventuais remarcações (mudança de data/hora).
+3. Adicionar os Próximos Passos, definindo o responsável de cada um.
+4. Opcional: marcar "Repetir todo mês" para criar vários encontros mensais de uma vez.
+5. Salvar. O liderado recebe notificação do agendamento e de eventuais remarcações (mudança de data/hora).
 
-Ao excluir um 1:1, as notificações que apontavam para ele são removidas automaticamente (não ficam órfãs para o liderado). Criar, editar e excluir 1:1 fica registrado na auditoria, visível para o líder daquele time e para o Dono da plataforma.
+As **anotações** não ficam mais presas à reunião: pertencem ao liderado (ver seção "Anotações"). Depois de salvar o 1:1, abra-o novamente para puxar as anotações do liderado no período e marcar quais entram na pauta — ou criar uma anotação nova ali mesmo (já vinculada àquela reunião).
+
+Ao excluir um 1:1, as notificações que apontavam para ele são removidas automaticamente (não ficam órfãs para o liderado). As anotações que estavam vinculadas a esse 1:1 **não são apagadas**: voltam a ser anotações livres do liderado. Criar, editar e excluir 1:1 fica registrado na auditoria, visível para o líder daquele time e para o Dono da plataforma.
+
+## Anotações
+
+As Anotações pertencem ao **liderado**, não à reunião — dá para anotar a qualquer momento, sem precisar de um 1:1. O item "Anotações" fica em "Pessoas & Performance", ao lado do One-on-One.
+
+- A entrada é **pela pessoa**: ao abrir, escolha o liderado na lista à esquerda e veja todas as anotações dele, ordenadas por data.
+- "Nova anotação" abre um editor com **data editável** (registre com a data do fato), formatação e emojis.
+- Cada anotação pode estar **livre** ou **vinculada a um 1:1** (some uma etiqueta "1:1"). No 1:1, a reunião apenas *consome* as anotações do período — ela não é dona delas.
+- Visibilidade: o líder do time e o Dono veem as anotações dos seus liderados; o autor vê as próprias. O liderado vê apenas as anotações ligadas aos 1:1 dele — anotações livres do gestor não aparecem para o liderado.
 
 ### Agendar para o time todo (admin)
 Em "Todas as reuniões", o botão "Agendar para o time" abre um quadro onde se adiciona várias pessoas, cada uma com sua data e hora. O botão "Adicionar time todo" preenche todos os colaboradores de uma vez. Há opção de repetir mensalmente. Ao confirmar, cria todos os 1:1 de uma vez e notifica cada pessoa individualmente.

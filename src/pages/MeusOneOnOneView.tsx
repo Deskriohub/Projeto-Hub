@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { OneOnOneTodoRow } from "@/components/OneOnOneTodoCheck";
@@ -19,6 +18,18 @@ import {
 import { toast } from "@/hooks/use-toast";
 import OneOnOneComentarios from "@/components/OneOnOneComentarios";
 import { FeedbackDialog, FeedbackRecord, TIPO_CONFIG } from "@/components/FeedbackDialog";
+import { renderMarkdownLite } from "@/lib/markdownLite";
+
+interface AnotacaoView {
+  id: string;
+  data: string;
+  conteudo: string | null;
+}
+
+function fmtDataBR(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-");
+  return `${d}/${m}/${y}`;
+}
 
 function fmtDataHora(iso: string) {
   const d = new Date(iso);
@@ -63,6 +74,7 @@ const MeusOneOnOneView = () => {
   const [gestorId, setGestorId] = useState<string>("");
   const [data, setData] = useState<string>("");
   const [anotacoes, setAnotacoes] = useState<string>("");
+  const [anotacoesList, setAnotacoesList] = useState<AnotacaoView[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -91,6 +103,13 @@ const MeusOneOnOneView = () => {
       setGestorId(rec.gestor_id);
       setData(rec.data_reuniao);
       setAnotacoes(rec.anotacoes || "");
+
+      const { data: anot } = await supabase
+        .from("anotacoes")
+        .select("id, data, conteudo")
+        .eq("one_on_one_id", id)
+        .order("data", { ascending: false });
+      setAnotacoesList((anot || []) as AnotacaoView[]);
 
       const { data: ts } = await supabase
         .from("one_on_one_todos")
@@ -193,14 +212,28 @@ const MeusOneOnOneView = () => {
           </div>
 
           <div>
-            <Label htmlFor="anotacoes" className="mb-2 block">Anotações</Label>
-            <Textarea
-              id="anotacoes"
-              value={anotacoes}
-              readOnly
-              disabled
-              className="min-h-[300px] font-mono text-sm"
-            />
+            <Label className="mb-2 block">Anotações</Label>
+            {anotacoesList.length === 0 && !anotacoes.trim() ? (
+              <p className="text-sm text-muted-foreground">Sem anotações.</p>
+            ) : anotacoesList.length > 0 ? (
+              <ul className="space-y-2">
+                {anotacoesList.map((a) => (
+                  <li key={a.id} className="rounded-md border border-border bg-background p-3">
+                    <p className="text-xs font-medium text-foreground mb-1">{fmtDataBR(a.data)}</p>
+                    <div
+                      className="text-sm text-foreground [&_p]:mb-1 [&_p:last-child]:mb-0"
+                      dangerouslySetInnerHTML={renderMarkdownLite(a.conteudo || "")}
+                    />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              // Fallback: 1:1 antigo cuja anotação ainda está só na coluna legada
+              <div
+                className="rounded-md border border-border bg-background p-3 text-sm text-foreground [&_p]:mb-1 [&_p:last-child]:mb-0"
+                dangerouslySetInnerHTML={renderMarkdownLite(anotacoes)}
+              />
+            )}
           </div>
 
           <div>
